@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+aux_task_discovery/__init__.py
+aux_task_discovery.egg-info/PKG-INFO
+aux_task_discovery.egg-info/SOURCES.txt
+aux_task_discovery.egg-info/dependency_links.txt
+aux_task_discovery.egg-info/top_level.txt
