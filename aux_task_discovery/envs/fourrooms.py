@@ -1,7 +1,7 @@
-from envs.gridworld import GridWorldEnv
+from aux_task_discovery.envs.gridworld import GridWorldEnv
 
 class FourRoomsEnv(GridWorldEnv):
-    def __init__(self, seed):
+    def __init__(self, seed=42):
         # Add boarder walls
         obstacles = [
             (x,y) 
@@ -14,7 +14,12 @@ class FourRoomsEnv(GridWorldEnv):
                       (2,4),
                       (3,4),
                       (4,1),
-                      ]
+                      (4,3),
+                      (4,4),
+                      (5,4),
+                      (5,5),
+                      (5,7),
+                      (7,4)]
 
         super().__init__(
             size=9, 
@@ -23,3 +28,8 @@ class FourRoomsEnv(GridWorldEnv):
             obstacles=obstacles,
             action_noise=0.5,
             seed=seed)
+        
+if __name__ == "__main__":
+    # Print grid as string for reference
+    env = FourRoomsEnv()
+    env.print_grid()

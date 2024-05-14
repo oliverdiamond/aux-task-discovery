@@ -14,11 +14,13 @@ class GridWorldEnv(gym.Env):
         # Size of square grid
         self.size = size
         # Starting location for each episode
+        assert not self._out_of_bounds(start_pos), 'Start pos must be in bounds'
         self.start_pos = start_pos
         # Goal location for each episode
+        assert not self._out_of_bounds(start_pos), 'Goal pos must be in bounds'
         self.goal_pos = goal_pos
         # Current agent pos
-        self.curr_pos = (None, None)
+        self.agent_pos = (None,None)
         # Obstacles are positions the agent cannot move to
         # Attempting to move to one of these locations results in no move
         self.obstacles = obstacles
@@ -46,6 +48,7 @@ class GridWorldEnv(gym.Env):
         '''
         Converts (x,y) pos to one-hot numpy array
         '''
+        assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
         state_idx = pos[0]*self.size + pos[1]
         obs = np.zeros(self.n_states, dtype=np.int64)
         obs[state_idx] = 1
@@ -66,15 +69,15 @@ class GridWorldEnv(gym.Env):
         return new_pos
 
     def reset(self):
-        self.curr_pos = self.start_pos
-        obs = self._get_obs(pos=self.curr_pos)
+        self.agent_pos = self.start_pos
+        obs = self._get_obs(pos=self.agent_pos)
         return obs, {}
 
     def step(self, action):
-        new_pos = self._get_new_pos(self.curr_pos, action)
-        obs = self._get_obs(new_pos)
+        self.agent_pos = self._get_new_pos(self.agent_pos, action)
+        obs = self._get_obs(self.agent_pos)
         rew = -1
-        terminated = new_pos == self.goal_pos
+        terminated = self.agent_pos == self.goal_pos
         truncated = False
         return obs, rew, terminated, truncated, {}
     
@@ -82,5 +85,132 @@ class GridWorldEnv(gym.Env):
         '''
         Prints grid as string
         '''
-        pass
+        grid = ''
+        for x in range(self.size):
+            for y in range(self.size):
+                if (x,y) in self.obstacles:
+                    grid+='#'
+                elif (x,y) == self.start_pos:
+                    grid+='S'
+                elif (x,y) == self.goal_pos:
+                    grid+='G'
+                else:
+                    grid+=' '
+            grid+='\n'
+        print(grid)
+
+#------------------------TESTS------------------------#
+
+def test_out_of_bounds():
+    env = GridWorldEnv(size=5)
+    # Test in bounds pos
+    assert not env._out_of_bounds((2, 3))
+    assert not env._out_of_bounds((4, 4))
+    # Test out of bounds pos
+    assert env._out_of_bounds((1, 5))
+    assert env._out_of_bounds((-1, 2))
+
+def test_is_obstacle():
+    env = GridWorldEnv(size=5, 
+                       obstacles=[(2, 2), (3, 3)])
+    # Test for obstacle pos
+    assert env._is_obstacle((2, 2))
+    assert env._is_obstacle((3, 3))
+    # Test for non-obstacle pos
+    assert not env._is_obstacle((1, 2))
+    assert not env._is_obstacle((4, 4))
+
+def test_get_obs():
+    env = GridWorldEnv(size=3)
+    # Testing one-hot encoding of (x,y) pos
+    assert np.array_equal(env._get_obs((1, 2)), np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
+    assert np.array_equal(env._get_obs((2, 2)), np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
+
+def test_get_new_pos():
+    # Tests for env with no noise
+    env = GridWorldEnv(size=3, 
+                       obstacles=[(1, 0)])
+    # Test for moving within bounds and not to an obstacle
+    assert env._get_new_pos((1, 1), 0) == (0, 1)
+    # Test for moving to an obstacle
+    assert env._get_new_pos((1, 1), 1) == (1, 1)
+    # Test for moving out of bounds
+    assert env._get_new_pos((2, 2), 2) == (2, 2)
+
+    # Test for env with noise
+    env = GridWorldEnv(size=3, 
+                       seed=42, 
+                       action_noise=0.5, 
+                       obstacles=[(1, 0)])
+    assert env._get_new_pos((1, 1), 1) == (0, 1)
+
+def test_reset():
+    env = GridWorldEnv(size=3, 
+                       start_pos=(1, 1))
+    obs, _ = env.reset()
+    # Test if agent position is reset to the starting position
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
+
+def test_step():
+    # Test for env with no noise
+    env = GridWorldEnv(size=3, 
+                       start_pos=(1, 1), 
+                       goal_pos=(2, 2))
+    env.reset()
+    obs, rew, terminated, truncated, _ = env.step(3)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
+    assert rew == -1
+    assert not terminated
+    assert not truncated
+    
+    # Test move to goal state
+    obs, rew, terminated, truncated, _ = env.step(2)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
+    assert rew == -1
+    assert terminated
+    assert not truncated
+
+    # Tests for env with noise
+    env = GridWorldEnv(size=3, 
+                       start_pos=(1, 1), 
+                       goal_pos=(2, 2), 
+                       action_noise=0.5, 
+                       seed=42,
+                       obstacles=[(0,1)])
+    env.reset()
+    obs, rew, terminated, truncated, _ = env.step(3)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
+    assert rew == -1
+    assert not terminated
+    assert not truncated
+
+    obs, rew, terminated, truncated, _ = env.step(2)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
+    assert rew == -1
+    assert not terminated
+    assert not truncated
+
+    obs, rew, terminated, truncated, _ = env.step(3)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
+    assert rew == -1
+    assert not terminated
+    assert not truncated
+
+    obs, rew, terminated, truncated, _ = env.step(3)
+    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
+    assert rew == -1
+    assert terminated
+    assert not truncated
+
+def run_tests():
+    test_out_of_bounds()
+    test_is_obstacle()
+    test_get_obs()
+    test_get_new_pos()
+    test_reset()
+    test_step()
+    print('All tests passing')
+
+if __name__ == "__main__":
+    run_tests()
 
