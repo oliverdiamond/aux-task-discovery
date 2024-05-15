@@ -2,25 +2,17 @@ from aux_task_discovery.envs.gridworld import GridWorldEnv
 
 class MazeEnv(GridWorldEnv):
     def __init__(self, seed=42):
-        # Add boarder walls
-        obstacles = [
-            (x,y) 
-            for x in range(11) 
-            for y in range(11) 
-            if (x in [0,10]) or (y in [0,10])
-        ]
-        # Add interior obstacles
-        obstacles += [(2,2),(2,3),(2,4),(2,5),(2,6),
-                      (2,7),(2,8),(3,2),(4,2),(5,2),
-                      (6,2),(7,2),(8,2),(8,3),(8,4),
-                      (8,5),(8,6),(8,7),(8,8),(3,8),
-                      (4,8),(6,8),(7,8),(4,4),(4,5),
-                      (4,6),(5,6),(6,4),(6,5),(6,6)]
-
+        # Add obstacles
+        obstacles = [(1,1), (1,2), (1,3), (1,4), (1,5), 
+                     (1,6), (1,7), (2,1), (3,1), (4,1), 
+                     (5,1), (6,1), (7,1), (7,2), (7,3), 
+                     (7,4), (7,5), (7,6), (7,7), (2,7), 
+                     (3,7), (5,7), (6,7), (3,3), (3,4), 
+                     (3,5), (4,5), (5,3), (5,4), (5,5)]
         super().__init__(
-            size=11, 
-            start_pos=(9,1),
-            goal_pos=(5,5),
+            size=9, 
+            start_pos=(8,0),
+            goal_pos=(4,4),
             obstacles=obstacles,
             action_noise=0.5,
             seed=seed)

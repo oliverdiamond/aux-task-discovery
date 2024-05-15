@@ -86,9 +86,12 @@ class GridWorldEnv(gym.Env):
         Prints grid as string
         '''
         grid = ''
-        for x in range(self.size):
-            for y in range(self.size):
-                if (x,y) in self.obstacles:
+        for x in range(-1, self.size+1):
+            for y in range(-1, self.size+1):
+                # Displays walls around grid
+                if x in [-1, self.size] or y in [-1, self.size]:
+                    grid+='#'
+                elif (x,y) in self.obstacles:
                     grid+='#'
                 elif (x,y) == self.start_pos:
                     grid+='S'

@@ -2,29 +2,21 @@ from aux_task_discovery.envs.gridworld import GridWorldEnv
 
 class FourRoomsEnv(GridWorldEnv):
     def __init__(self, seed=42):
-        # Add boarder walls
-        obstacles = [
-            (x,y) 
-            for x in range(9) 
-            for y in range(9) 
-            if (x in [0,8]) or (y in [0,8])
-        ]
-        # Add interior obstacles
-        obstacles += [(1,4),
-                      (2,4),
-                      (3,4),
-                      (4,1),
-                      (4,3),
-                      (4,4),
-                      (5,4),
-                      (5,5),
-                      (5,7),
-                      (7,4)]
-
+        # Add obstacles
+        obstacles = [(0,3), 
+                     (1,3), 
+                     (2,3), 
+                     (3,0), 
+                     (3,2), 
+                     (3,3), 
+                     (4,3), 
+                     (4,4), 
+                     (4,6), 
+                     (6,3)]
         super().__init__(
-            size=9, 
-            start_pos=(7,1),
-            goal_pos=(1,6),
+            size=7, 
+            start_pos=(6,0),
+            goal_pos=(0,5),
             obstacles=obstacles,
             action_noise=0.5,
             seed=seed)
