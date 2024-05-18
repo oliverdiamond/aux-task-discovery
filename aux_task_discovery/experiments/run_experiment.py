@@ -1,6 +1,8 @@
 '''
 NOTES
--Make sure to call env.reset(seed=seed) at the begining of the run, and then in all later
-calls use env.reset(seed=None)
-
+-Make sure to set seed for env, pytorch, numpy and python random
+-Should env seed be the same as the random seed for the algorithm (i.e the random seed used for numpy, python, random?)
+-Set up torch device
+-Log metrics using return dict from agent update
+-Add progress bar
 '''

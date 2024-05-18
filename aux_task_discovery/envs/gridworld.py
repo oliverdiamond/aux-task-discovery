@@ -212,7 +212,6 @@ def run_tests():
     test_get_new_pos()
     test_reset()
     test_step()
-    print('All tests passing')
 
 if __name__ == "__main__":
     run_tests()
