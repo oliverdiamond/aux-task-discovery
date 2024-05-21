@@ -1,6 +1,6 @@
 import numpy as np
 import gymnasium as gym
-from gymnasium.spaces import Discrete
+from gymnasium.spaces import Discrete, Box
 from typing import Tuple
 
 class GridWorldEnv(gym.Env):
@@ -27,7 +27,9 @@ class GridWorldEnv(gym.Env):
         # Total number of states
         self.n_states = self.size*self.size
         # Observation is one-hot encoding of (x,y) grid location
-        self.observation_space = Discrete(self.n_states)
+        self.observation_space = Box(low=0, 
+                                     high=1, 
+                                     shape=(self.n_states,))
         # Actions are directions: up, left, down, right
         self.action_space = Discrete(4)
         # Agent moves in selected direction with prob 1-action_noise
@@ -50,7 +52,7 @@ class GridWorldEnv(gym.Env):
         '''
         assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
         state_idx = pos[0]*self.size + pos[1]
-        obs = np.zeros(self.n_states, dtype=np.int64)
+        obs = np.zeros(self.n_states, dtype=np.float32)
         obs[state_idx] = 1
         return obs
     
@@ -68,7 +70,7 @@ class GridWorldEnv(gym.Env):
             return pos
         return new_pos
 
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         self.agent_pos = self.start_pos
         obs = self._get_obs(pos=self.agent_pos)
         return obs, {}

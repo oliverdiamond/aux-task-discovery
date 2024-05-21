@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import numpy as np
 
 import aux_task_discovery.utils.pytorch_utils as ptu
 
@@ -11,11 +12,11 @@ _str_to_activation = {
 
 class ActionValueNetwork(nn.Module):
     '''
-    Basic MLP that outputs (state,action) values
+    Basic feed forward MLP that outputs (state,action) values
     '''
     def __init__(
         self, 
-        input_size,
+        input_shape,
         n_actions,
         n_hidden = 1, 
         hidden_size = 500,
@@ -25,8 +26,10 @@ class ActionValueNetwork(nn.Module):
         # Build MLP
         activation = _str_to_activation[activation]
         layers = []
-        in_size = input_size
+        # Flatten obs to 1d tensor
+        layers.append(nn.Flatten())
         # Add hidden layers
+        in_size = np.prod(input_shape)
         for _ in range(n_hidden):
             layers.append(nn.Linear(in_size, hidden_size))
             layers.append(activation)
@@ -45,4 +48,4 @@ class MasterUserNetwork(nn.Module):
     '''
     Multi-headed MLP for state-action values across any number of auxillery tasks.
     '''
-    pass
+    

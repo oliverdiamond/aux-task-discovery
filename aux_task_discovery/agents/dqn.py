@@ -7,7 +7,7 @@ from torch import optim
 
 from aux_task_discovery.utils import random_argmax
 import aux_task_discovery.utils.pytorch_utils as ptu
-from aux_task_discovery.agents import BaseAgent, ReplayBuffer
+from aux_task_discovery.agents.base import BaseAgent, ReplayBuffer
 from aux_task_discovery.models import ActionValueNetwork
 
 
@@ -17,9 +17,10 @@ class DQNAgent(BaseAgent):
     '''
     def __init__(
         self,
-        input_size,
+        input_shape,
         n_actions,
-        learning_rate = 1e-4, 
+        seed = 42,
+        learning_rate = 0.0001, 
         epsilon = 0.1,
         anneal_epsilon = False,
         n_anneal = 10000,
@@ -33,8 +34,10 @@ class DQNAgent(BaseAgent):
         target_update_freq=100,
         learning_start = 100
     ):
-        self.input_size = input_size
+        self.input_shape= input_shape
         self.n_actions = n_actions
+        self.seed = seed
+        self.rand_gen = np.random.RandomState(seed)
         self.learning_rate = learning_rate
         self.epsilon = epsilon
         self.anneal_epsilon = anneal_epsilon
@@ -55,11 +58,11 @@ class DQNAgent(BaseAgent):
         self._update_target_network()
 
     def _setup_replay_buffer(self):
-        self.replay_buffer = ReplayBuffer(capacity=self.buffer_size)
+        self.replay_buffer = ReplayBuffer(capacity=self.buffer_size, seed=self.seed)
 
     def _setup_model(self):
         self.model = ActionValueNetwork(
-                        input_size=self.input_size,
+                        input_shape=self.input_shape,
                         n_actions=self.n_actions,
                         n_hidden=self.n_hidden,
                         hidden_size=self.hidden_size,
@@ -77,10 +80,11 @@ class DQNAgent(BaseAgent):
         '''
         Selects e-greedy action using q-values from model
         '''
-        if np.random.rand() < self.epsilon:
-            return np.random.randint(0, self.n_actions)
+        if self.rand_gen.rand() < self.epsilon:
+            return self.rand_gen.randint(0, self.n_actions)
         obs = ptu.from_numpy(obs)
-        q_vals = ptu.to_numpy(self.model(obs))
+        obs = obs.unsqueeze(0)
+        q_vals = ptu.to_numpy(self.model(obs))[0]
         return random_argmax(q_vals)
 
     def step(
@@ -90,18 +94,18 @@ class DQNAgent(BaseAgent):
         rew: Union[float, int], 
         next_obs: np.ndarray, 
         terminated: bool,
-        truncated: bool,
-    ):
+        truncated: bool
+    ) -> dict:
         '''
         Adds a single transition to the replay buffer and updates model weights 
-        and algorithm parameters as nessesary
+        and algorithm parameters as nessesary. Returns dict for logging.
         '''
         log_data = {}
         self.replay_buffer.insert(obs, act, rew, next_obs, terminated, truncated)
         if self.anneal_epsilon and self.step_idx <= self.n_anneal:
             # Linearly decreases epsilon from init value to 0.1 over n_anneal steps
             self.epsilon -= (self.epsilon-0.1)/self.n_anneal
-            log_data['epsilon'] = self.epsilon
+            log_data['DQN_epsilon'] = self.epsilon
         if self.step_idx >= self.learning_start and self.step_idx % self.update_freq == 0:
             train_data = self.train()
             log_data.update(train_data)
@@ -123,12 +127,13 @@ class DQNAgent(BaseAgent):
         truncated = batch["truncateds"]
 
         # Get max state-action values for next states from target net
-        next_q = self.target_model(ptu.from_numpy(next_obs)).max(dim=1).detach()
+        next_q = self.target_model(ptu.from_numpy(next_obs)).max(dim=-1)[0].detach()
+        next_q = next_q.detach()
         next_q[terminated & ~truncated] = 0
-        targets = rew + self.gamma * next_q
+        targets = ptu.from_numpy(rew) + (self.gamma * next_q)
 
         # Get pred q_vals for current obs
-        preds = self.model(ptu.from_numpy(obs))[torch.arange(preds.shape[0]), ptu.from_numpy(act)]
+        preds = self.model(ptu.from_numpy(obs))[torch.arange(obs.shape[0]), ptu.from_numpy(act)]
         
         # Calculate MSE
         losses = (targets - preds) ** 2
@@ -145,4 +150,4 @@ class DQNAgent(BaseAgent):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return {'train_loss': loss.item()}
+        return {'DQN_train_loss': loss.item()}

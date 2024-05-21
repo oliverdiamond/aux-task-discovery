@@ -5,14 +5,14 @@ import numpy as np
 
 device = None
 
-def init_gpu(use_gpu=True, gpu_id=0):
+def init_gpu(use_gpu=False, gpu_id=0):
     global device
     if torch.cuda.is_available() and use_gpu:
         device = torch.device("cuda:" + str(gpu_id))
-        print("Using GPU id {}".format(gpu_id))
+        print("Torch is using GPU with id {}".format(gpu_id))
     else:
         device = torch.device("cpu")
-        print("Using CPU.")
+        print("Torch is using CPU.")
 
 def from_numpy(data: Union[np.ndarray, dict], **kwargs):
     if isinstance(data, dict):
@@ -22,7 +22,6 @@ def from_numpy(data: Union[np.ndarray, dict], **kwargs):
         if data.dtype == torch.float64:
             data = data.float()
         return data.to(device)
-
 
 def to_numpy(tensor: Union[torch.Tensor, dict]):
     if isinstance(tensor, dict):

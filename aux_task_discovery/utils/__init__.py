@@ -1,1 +1,1 @@
-from .utils import random_argmax
+from .utils import random_argmax, load_yaml_config

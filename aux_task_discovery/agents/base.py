@@ -24,8 +24,9 @@ class BaseAgent(ABC):
         pass
 
 class ReplayBuffer:
-    def __init__(self, capacity=1000000):
+    def __init__(self, capacity=1000000, seed=42):
         self.max_size = capacity
+        self.rand_gen = np.random.RandomState(seed)
         self.n_inserts = 0
         self.observations = None
         self.actions = None
@@ -45,7 +46,7 @@ class ReplayBuffer:
         '''
         Samples batch_size entries from the replay buffer.
         '''
-        rand_indices = np.random.randint(0, self.size, size=(batch_size,))
+        rand_indices = self.rand_gen.randint(0, self.size, size=(batch_size,))
         return {
             "observations": self.observations[rand_indices],
             "actions": self.actions[rand_indices],

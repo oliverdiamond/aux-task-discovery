@@ -1,14 +1,14 @@
 from gymnasium.envs.registration import register
 
 register(
-     id="envs/maze",
+     id="maze",
      entry_point="aux_task_discovery.envs:MazeEnv",
 )
 register(
-     id="envs/fourrooms",
+     id="fourrooms",
      entry_point="aux_task_discovery.envs:FourRoomsEnv",
 )
 register(
-     id="envs/gridworld",
+     id="gridworld",
      entry_point="aux_task_discovery.envs:GridWorldEnv",
 )
