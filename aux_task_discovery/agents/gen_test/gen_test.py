@@ -25,7 +25,11 @@ class GenTestAgent(BaseAgent):
         n_actions: int,
         generator: str,
         tester: str,
-        n_aux_tasks = 4,
+        n_aux_tasks = 5,
+        age_threshold = 0,
+        replace_cycle = 500,
+        replace_ratio = 0.2,
+        trace = 0.05,
         seed = 42,
         learning_rate = 0.0001, 
         epsilon = 0.1,
@@ -38,10 +42,14 @@ class GenTestAgent(BaseAgent):
         batch_size = 16,
         update_freq = 1,
         target_update_freq=100,
-        learning_start = 100
+        learning_start = 100,
     ):
         self.n_actions = n_actions
         self.n_aux_tasks = n_aux_tasks
+        self.age_threshold = age_threshold,
+        self.replace_cycle = replace_cycle,
+        self.replace_ratio = replace_ratio,
+        self.task_ages = np.zeros(n_aux_tasks)
         self.rand_gen = np.random.RandomState(seed)
         self.epsilon = epsilon
         self.anneal_epsilon = anneal_epsilon
@@ -52,6 +60,8 @@ class GenTestAgent(BaseAgent):
         self.target_update_freq = target_update_freq
         self.learning_start = learning_start
         self.step_idx = 1
+        self.generator = None #TODO Get generator from str and init
+        self.tester = None # TODO Get tester from str and init
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
         self.model = MasterUserNetwork(
                         input_shape=input_shape,
@@ -61,6 +71,7 @@ class GenTestAgent(BaseAgent):
                         activation=activation,
                         )
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.tasks = np.array(generator.generate_tasks(self.n_aux_tasks))
         self._update_target_network()
 
     def _update_target_network(self):
@@ -75,7 +86,7 @@ class GenTestAgent(BaseAgent):
             return self.rand_gen.randint(0, self.n_actions)
         obs = ptu.from_numpy(obs)
         obs = obs.unsqueeze(0)
-        q_vals = ptu.to_numpy(self.model(obs))['main'][0] #TODO Decide if this should be dict or list of each head's outputs
+        q_vals = ptu.to_numpy(self.model(obs))['main'][0]
         return random_argmax(q_vals)
 
     def get_loss(self):

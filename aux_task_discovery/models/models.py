@@ -1,4 +1,5 @@
 import warnings 
+from collections import OrderedDict
 
 import torch
 from torch import nn
@@ -74,10 +75,10 @@ class MasterUserNetwork(nn.Module):
                                 activation,
                             ).to(ptu.device)
         # Build output heads
-        heads = []
+        heads = {}
         start = 0
         stop = (hidden_size // n_heads) + (hidden_size % n_heads)
-        for _ in range(n_heads):
+        for i in range(n_heads):
             # Sets gradient to 0 during backward pass for all hidden features not shaped by this output head
             def backward_hook(module, grad_input, grad_output):
                 new_grad = torch.zeros_like(grad_input[0])
@@ -86,16 +87,28 @@ class MasterUserNetwork(nn.Module):
 
             head = nn.Linear(hidden_size, n_actions)
             head.register_full_backward_hook(backward_hook)
-            heads.append(head)
+            if i == 0:
+                # Main task head
+                heads['main'] = head
+            else:
+                # Aux task heads have keys 0 through n_aux_tasks-1
+                heads[i-1] = head
 
             start = stop
             stop = start + (hidden_size // n_heads)
         
-        self.output_heads = nn.ModuleList(heads).to(ptu.device)
+        self.output_heads = nn.ModuleDict(heads).to(ptu.device)
 
     def forward(self, obs: torch.FloatTensor):
-        pass
-
+        '''
+        Returns dictionary with head IDs as keys and their respective outputs as values. \n
+        ID for the main task is 'main'. IDs for aux tasks are 0 through n_aux_tasks-1. \n
+        Also returns the shared representation layer under the key 'hidden_features'.
+        '''
+        hidden_features = self.shared_layer(obs)
+        outputs = {key : head(hidden_features) for key, head in self.output_heads.items()}
+        outputs['hidden_features'] = hidden_features
+        return outputs
 
 
 
