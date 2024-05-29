@@ -66,8 +66,7 @@ class DQNAgent(BaseAgent):
         '''
         if self.rand_gen.rand() < self.epsilon:
             return self.rand_gen.randint(0, self.n_actions)
-        obs = ptu.from_numpy(obs)
-        obs = obs.unsqueeze(0)
+        obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))[0]
         return random_argmax(q_vals)
 
@@ -84,19 +83,19 @@ class DQNAgent(BaseAgent):
         Adds a single transition to the replay buffer and updates model weights 
         and algorithm parameters as nessesary. Returns dict for logging.
         '''
-        log_data = {}
+        log_info = {}
         self.replay_buffer.insert(obs, act, rew, next_obs, terminated, truncated)
         if self.anneal_epsilon and self.step_idx <= self.n_anneal:
             # Linearly decreases epsilon from init value to 0.1 over n_anneal steps
             self.epsilon -= (self.epsilon-0.1)/self.n_anneal
-            log_data['DQN_epsilon'] = self.epsilon
+            log_info['DQN_epsilon'] = self.epsilon
         if self.step_idx >= self.learning_start and self.step_idx % self.update_freq == 0:
-            train_data = self.train()
-            log_data.update(train_data)
+            train_info = self.train()
+            log_info.update(train_info)
         if self.step_idx % self.target_update_freq == 0:
             self._update_target_network()
         self.step_idx += 1
-        return log_data
+        return log_info
 
     def get_loss(self):
         '''
@@ -111,10 +110,9 @@ class DQNAgent(BaseAgent):
         truncated = batch["truncateds"]
 
         # Get max state-action values for next states from target net
-        next_q = self.target_model(ptu.from_numpy(next_obs)).max(dim=-1)[0].detach()
-        next_q = next_q.detach()
-        next_q[terminated & ~truncated] = 0
-        targets = ptu.from_numpy(rew) + (self.gamma * next_q)
+        next_qs = self.target_model(ptu.from_numpy(next_obs)).max(dim=-1)[0].detach()
+        next_qs[terminated & ~truncated] = 0
+        targets = ptu.from_numpy(rew) + (self.gamma * next_qs)
 
         # Get pred q_vals for current obs
         preds = self.model(ptu.from_numpy(obs))[torch.arange(obs.shape[0]), ptu.from_numpy(act)]
@@ -122,7 +120,8 @@ class DQNAgent(BaseAgent):
         # Calculate MSE
         losses = (targets - preds) ** 2
         loss = losses.mean()
-        return loss
+        info = {'DQN_loss': loss.item()}
+        return loss, info
 
     def train(self):
         '''
@@ -130,8 +129,8 @@ class DQNAgent(BaseAgent):
         Returns a dict containing loss metrics.
         '''
         self.model.train()
-        loss = self.get_loss()
+        loss, loss_info = self.get_loss()
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return {'DQN_train_loss': loss.item()}
+        return loss_info

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from typing import List
+from typing import Sequence
 
 import numpy as np
 
@@ -8,15 +8,15 @@ from aux_task_discovery.agents.gen_test.gvf import GVF
 from aux_task_discovery.envs import FourRoomsEnv
 
 class Generator(ABC):
-    def __init__(self, seed=42, **kwargs):
+    def __init__(self, seed, **kwargs):
         self.rand_gen = np.random.RandomState(seed)
 
-    def generate_tasks(self, n_tasks) -> List[GVF]:
+    def generate_tasks(self, n_tasks) -> Sequence[GVF]:
         return [self.generate_task() for _ in range(n_tasks)]
 
     @abstractmethod
     def generate_task(self) -> GVF:
-        pass
+        raise NotImplementedError()
 
 
 class OneHotGenerator(Generator):
@@ -25,8 +25,8 @@ class OneHotGenerator(Generator):
     Gamma is 0 for subgoal and 1 for all other states.
     Cumulant is -1 for all states. 
     '''
-    def __init__(self, input_shape: tuple, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, input_shape: tuple, seed=42, **kwargs):
+        super().__init__(seed=seed)
         self.input_size = np.prod(input_shape)
 
     def generate_task(self) -> GVF:
@@ -45,6 +45,19 @@ class FourroomsCornerGenerator(Generator):
 
 class FourroomsHallwayGenerator(Generator):
     pass
+
+
+GENERATOR_REG = {
+    'onehot': OneHotGenerator,
+    'feature': FeatureAttainGenerator,
+    'fourrooms_corner': FourroomsCornerGenerator,
+    'fourrooms_hallway': FourroomsHallwayGenerator,
+}
+
+def get_generator(generator: str):
+    assert generator in GENERATOR_REG, 'Given generator is not registered'
+    return GENERATOR_REG[generator]
+
 
 
 #------------------------TESTS------------------------#

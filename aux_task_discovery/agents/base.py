@@ -5,7 +5,7 @@ import numpy as np
 class BaseAgent(ABC):
     @abstractmethod
     def get_action(self, obs):
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def step(self, 
@@ -16,11 +16,11 @@ class BaseAgent(ABC):
         terminated,
         truncated,
     ):
-        pass
+        raise NotImplementedError()
     
     @abstractmethod
     def train(self):
-        pass
+        raise NotImplementedError()
 
 class ReplayBuffer:
     def __init__(self, capacity=1000000, seed=42):

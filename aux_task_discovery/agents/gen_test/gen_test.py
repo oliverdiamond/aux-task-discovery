@@ -1,4 +1,5 @@
 import copy
+from typing import Union
 
 import numpy as np
 import torch
@@ -7,9 +8,9 @@ from torch import optim
 from aux_task_discovery.utils import random_argmax
 import aux_task_discovery.utils.pytorch_utils as ptu
 from aux_task_discovery.agents.base import BaseAgent, ReplayBuffer
-from aux_task_discovery.agents.gen_test.generators import Generator
-from aux_task_discovery.agents.gen_test.testers import Tester
 from aux_task_discovery.models import MasterUserNetwork
+from aux_task_discovery.agents.gen_test.generators import get_generator
+from aux_task_discovery.agents.gen_test.testers import get_tester
 
 
 class GenTestAgent(BaseAgent):
@@ -29,7 +30,7 @@ class GenTestAgent(BaseAgent):
         age_threshold = 0,
         replace_cycle = 500,
         replace_ratio = 0.2,
-        trace = 0.05,
+        tester_tau = 0.05,
         seed = 42,
         learning_rate = 0.0001, 
         epsilon = 0.1,
@@ -46,9 +47,9 @@ class GenTestAgent(BaseAgent):
     ):
         self.n_actions = n_actions
         self.n_aux_tasks = n_aux_tasks
-        self.age_threshold = age_threshold,
-        self.replace_cycle = replace_cycle,
-        self.replace_ratio = replace_ratio,
+        self.age_threshold = age_threshold
+        self.replace_cycle = replace_cycle
+        self.n_replace = round(n_aux_tasks * replace_ratio)
         self.task_ages = np.zeros(n_aux_tasks)
         self.rand_gen = np.random.RandomState(seed)
         self.epsilon = epsilon
@@ -60,18 +61,25 @@ class GenTestAgent(BaseAgent):
         self.target_update_freq = target_update_freq
         self.learning_start = learning_start
         self.step_idx = 1
-        self.generator = None #TODO Get generator from str and init
-        self.tester = None # TODO Get tester from str and init
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
         self.model = MasterUserNetwork(
                         input_shape=input_shape,
                         n_actions=n_actions,
-                        n_heads=n_aux_tasks+1, # Add additional head for main task
+                        n_aux_tasks=n_aux_tasks, # Add additional head for main task
                         hidden_size=hidden_size,
                         activation=activation,
                         )
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.tasks = np.array(generator.generate_tasks(self.n_aux_tasks))
+        self.generator = get_generator(generator)(
+            input_shape=input_shape,
+            seed=seed,
+            )
+        self.tester = get_tester(tester)(
+            model=self.model,
+            tau=tester_tau,
+            seed=seed
+        )
+        self.tasks = np.array(self.generator.generate_tasks(self.n_aux_tasks))
         self._update_target_network()
 
     def _update_target_network(self):
@@ -84,14 +92,69 @@ class GenTestAgent(BaseAgent):
         '''
         if self.rand_gen.rand() < self.epsilon:
             return self.rand_gen.randint(0, self.n_actions)
-        obs = ptu.from_numpy(obs)
-        obs = obs.unsqueeze(0)
+        obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))['main'][0]
         return random_argmax(q_vals)
+    
+    def step(
+        self, 
+        obs: np.ndarray, 
+        act: int,
+        rew: Union[float, int], 
+        next_obs: np.ndarray, 
+        terminated: bool,
+        truncated: bool
+    ) -> dict:
+        '''
+        Adds a single transition to the replay buffer and updates model weights 
+        and algorithm parameters as nessesary. Returns dict for logging.
+        '''
+        log_info = {}
+        # DQN Update
+        self.replay_buffer.insert(obs, act, rew, next_obs, terminated, truncated)
+        if self.anneal_epsilon and self.step_idx <= self.n_anneal:
+            # Linearly decreases epsilon from init value to 0.1 over n_anneal steps
+            self.epsilon -= (self.epsilon-0.1)/self.n_anneal
+            log_info['DQN_epsilon'] = self.epsilon
+        if self.step_idx >= self.learning_start and self.step_idx % self.update_freq == 0:
+            train_info = self.train()
+            log_info.update(train_info)
+        if self.step_idx % self.target_update_freq == 0:
+            self._update_target_network()
+        
+        # Compute task ages and utils
+        self.task_ages += 1
+        self.task_utils = self.tester.eval_tasks(observation=obs)
+        task_info = {}
+        for i in range(self.n_aux_tasks):
+            task_info[f'aux_task_{i}_age'] = self.task_ages[i]
+            task_info[f'aux_task_{i}_util'] = self.task_utils[i]
+        log_info.update(task_info)
+
+        # Gen Test Update
+        if self.step_idx % self.replace_cycle == 0:
+            # Get tasks with with age > self.age_threshold
+            utils = self.task_utils[self.task_ages>self.age_threshold]
+            if len(utils) > 0:
+                # Get idxs in origional task list for tasks in the above slice
+                idxs = np.arange(self.n_aux_tasks)[self.task_ages>self.age_threshold]
+                # Get idxs of (n_aux_tasks * replace_ratio) tasks with lowest util
+                curr_tasks = list(zip(utils, idxs))
+                curr_tasks.sort(key=lambda x : x[0])
+                idxs = [x[1] for x in curr_tasks[:self.n_replace]]
+                # Replace with new tasks
+                new_tasks = self.generator.generate_tasks(len(idxs))
+                self.tasks[idxs] = new_tasks
+                # Reset input and output weights and of features induced by the replaced tasks
+                self.model.reset_task_params(idxs)
+                # Set ages to 0 for new tasks
+                self.task_ages[idxs] = 0
+        self.step_idx += 1
+        return log_info
 
     def get_loss(self):
         '''
-        Samples batch from replay buffer sums MSE loss for each output head.
+        Samples batch from replay buffer and sums MSE loss for each output head.
         '''
         #TODO Check if this should be MSE over all output heads
         batch = self.replay_buffer.sample(batch_size=self.batch_size)
@@ -101,18 +164,45 @@ class GenTestAgent(BaseAgent):
         next_obs = batch["next_observations"]
         terminated = batch["terminateds"]
         truncated = batch["truncateds"]
-        
-        # TODO Set self.tasks using self.generator
-        for task_id, task in self.tasks:
-            # Get max state-action values for next states from target net
-            next_q = self.target_model(ptu.from_numpy(next_obs))[task_id].max(dim=-1)[0].detach() #TODO Assumes forward returns dict for each head output with task_id
-            next_q[terminated & ~truncated] = 0
-            targets = ptu.from_numpy(rew) + (self.gamma * next_q)
 
-        # Get pred q_vals for current obs
-        preds = self.model(ptu.from_numpy(obs))[torch.arange(obs.shape[0]), ptu.from_numpy(act)]
+        # Dict with action-value estimates for obs for each output head from model
+        preds_all = self.model(ptu.from_numpy(obs))
+        # Dict with action-value estimates for next_obs for each output head from target model
+        next_q_all = self.target_model(ptu.from_numpy(next_obs))
         
-        # Calculate MSE
-        losses = (targets - preds) ** 2
-        loss = losses.mean()
-        return loss
+        info = {}
+        # Get loss for main task
+        preds = preds_all['main'][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
+        next_qs = next_q_all['main'].max(dim=-1)[0].detach()
+        next_qs[terminated & ~truncated] = 0
+        targets = ptu.from_numpy(rew) + (self.gamma * next_qs)
+        main_loss = ((targets - preds) ** 2).mean()
+        info['main_task_loss'] = main_loss.item()
+        
+        # Get loss for aux tasks
+        total_loss = main_loss
+        for i, task in enumerate(self.tasks):
+            preds = preds_all[i][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
+            next_qs = next_q_all[i].max(dim=-1)[0].detach()
+            gammas = ptu.from_numpy(task.gamma(next_obs))
+            cumulants = ptu.from_numpy(task.cumulant(next_obs))
+            targets =  cumulants + (gammas * next_qs)
+            aux_loss = ((targets - preds) ** 2).mean()
+            info[f'aux_{i}_loss'] = aux_loss.item()
+            total_loss += aux_loss
+        
+        info['total_loss'] = total_loss.item()
+        return total_loss, info
+    
+
+    def train(self):
+        '''
+        Computes loss on batch from replay buffer and updates model weights.
+        Returns a dict containing loss metrics.
+        '''
+        self.model.train()
+        loss, loss_info = self.get_loss()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return loss_info

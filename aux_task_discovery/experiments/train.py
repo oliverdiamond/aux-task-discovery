@@ -34,7 +34,8 @@ def training_loop(config=None):
     ptu.init_gpu(use_gpu=config.use_gpu, gpu_id=config.gpu_id)
 
     # Make env
-    env = gym.make(config.env, seed=config.seed, **config.env_args)
+    #TODO Add **config.env_args if we need to pass additional arguments to the env constructer
+    env = gym.make(config.env, seed=config.seed)
     assert isinstance(env.action_space, gym.spaces.Discrete), 'DQN requires discrete action space'
     
     # Make agent
@@ -43,7 +44,7 @@ def training_loop(config=None):
         n_actions=env.action_space.n,
         seed=config.seed,
         **config.agent_args
-    )
+        )
 
     # Train loop
     obs, _ = env.reset()

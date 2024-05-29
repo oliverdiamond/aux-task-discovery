@@ -1,8 +1,10 @@
 import warnings 
-from collections import OrderedDict
+from typing import Any, Dict, Sequence
+import math
 
 import torch
 from torch import nn
+from torch.nn import init
 import numpy as np
 
 import aux_task_discovery.utils.pytorch_utils as ptu
@@ -56,16 +58,17 @@ class MasterUserNetwork(nn.Module):
         self, 
         input_shape: tuple,
         n_actions: int,
-        n_heads = 1, 
+        n_aux_tasks = 5, 
         hidden_size = 500,
         activation = 'tanh',
     ):
         super().__init__()
-        if hidden_size % n_heads == 0:
-            warnings.warn("""
-                          Master-User hidden layer size not divisable by number of output heads.\n
-                          Extra hidden features will be delegated to the main task. 
-                          """)
+        self.hidden_size = hidden_size
+        self.n_aux_tasks = n_aux_tasks
+        self.n_heads = n_aux_tasks + 1 # Includes head for main task
+
+        if hidden_size % self.n_heads != 0:
+            warnings.warn('Master-User hidden layer size not divisable by number of output heads.\n Extra hidden features will be delegated to the main task.')
         activation = _str_to_activation[activation]
         in_size = np.prod(input_shape)
         # Build shared representation
@@ -75,10 +78,11 @@ class MasterUserNetwork(nn.Module):
                                 activation,
                             ).to(ptu.device)
         # Build output heads
-        heads = {}
+        aux_heads = []
+        self.feature_ranges = {} # Tracks start and stop idxs for shared features induced by each task
         start = 0
-        stop = (hidden_size // n_heads) + (hidden_size % n_heads)
-        for i in range(n_heads):
+        stop = (hidden_size // self.n_heads) + (hidden_size % self.n_heads)
+        for i in range(self.n_heads):
             # Sets gradient to 0 during backward pass for all hidden features not shaped by this output head
             def backward_hook(module, grad_input, grad_output):
                 new_grad = torch.zeros_like(grad_input[0])
@@ -88,29 +92,54 @@ class MasterUserNetwork(nn.Module):
             head = nn.Linear(hidden_size, n_actions)
             head.register_full_backward_hook(backward_hook)
             if i == 0:
-                # Main task head
-                heads['main'] = head
+                main_head = head
+                self.feature_ranges['main'] = (start, stop)
             else:
-                # Aux task heads have keys 0 through n_aux_tasks-1
-                heads[i-1] = head
+                aux_heads.append(head)
+                self.feature_ranges[i-1] = (start, stop)
 
             start = stop
-            stop = start + (hidden_size // n_heads)
+            stop = start + (hidden_size // self.n_heads)
         
-        self.output_heads = nn.ModuleDict(heads).to(ptu.device)
+        self.main_head = main_head.to(ptu.device)
+        self.aux_heads = nn.ModuleList(aux_heads).to(ptu.device)
 
-    def forward(self, obs: torch.FloatTensor):
+
+    def forward(self, obs: torch.FloatTensor) -> Dict[Any, torch.FloatTensor]:
         '''
         Returns dictionary with head IDs as keys and their respective outputs as values. \n
-        ID for the main task is 'main'. IDs for aux tasks are 0 through n_aux_tasks-1. \n
-        Also returns the shared representation layer under the key 'hidden_features'.
+        ID for the main task is 'main'. IDs for aux tasks are their indicies in MasterUserNetwork.aux_heads. \n
         '''
-        hidden_features = self.shared_layer(obs)
-        outputs = {key : head(hidden_features) for key, head in self.output_heads.items()}
-        outputs['hidden_features'] = hidden_features
+        shared_features = self.shared_layer(obs)
+        outputs = {idx : head(shared_features) for idx, head in enumerate(self.aux_heads)}
+        outputs['main'] = self.main_head(shared_features)
         return outputs
+    
+    def get_shared_features(self, obs: torch.FloatTensor) -> torch.FloatTensor:
+        '''
+        Get features produced by the hidden layer which are shared across all task heads 
+        for a given observation
+        '''
+        with torch.no_grad():
+            shared_features = self.shared_layer(obs)
+            return shared_features
 
-
-
+    def reset_task_params(self, tasks: Sequence[int]):
+        if isinstance(tasks, int):
+            tasks = [tasks]
+        with torch.no_grad():
+            for task in tasks:
+                # Reset weight and bias for task output head
+                self.aux_heads[task].reset_parameters()
+                # Reset weights for shared features induced by the task
+                # NOTE Currently use the default pytorch init methods for linear layers
+                start, stop = self.feature_ranges[task] # Get feature indicies for the task
+                new_w = init.kaiming_uniform_(self.shared_layer[1].weight.clone(), a=math.sqrt(5))
+                self.shared_layer[1].weight[start:stop,:] = new_w[start:stop,:]
+                # Reset bias for shared features induced by the task
+                fan_in, _ = init._calculate_fan_in_and_fan_out(self.shared_layer[1].weight)
+                bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+                new_b = init.uniform_(self.shared_layer[1].bias.clone(), -bound, bound)
+                self.shared_layer[1].bias[start:stop] = new_b[start:stop]
 
 

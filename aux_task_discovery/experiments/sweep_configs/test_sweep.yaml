@@ -4,21 +4,25 @@ parameters:
   env:
     value: 'fourrooms'
   agent:
-    value: 'dqn'
+    value: 'gentest'
   use_gpu:
     value: False
   gpu_id:
     value: Null
   seed:
-    values: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
+    values: [1] #[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]
   n_steps:
-    value: 25000
+    value: 250000
   agent_args:
     parameters: 
+      tester: 
+        value: 'trace'
+      generator: 
+        value: 'onehot'
       learning_rate:
-        values: [0.0025]
+        value: 0.0025
       hidden_size:
-        value: 50
+        value: 36
       buffer_size:
         value: 500
       batch_size: 
