@@ -1,11 +1,3 @@
-'''
-NOTES
--Make sure to set seed for env, pytorch, numpy and python random
--Should env seed be the same as the random seed for the algorithm (i.e the random seed used for numpy, python, random?)
--Set up torch device
--Log metrics using return dict from agent update
--Add progress bar
-'''
 import time
 import random
 
@@ -20,9 +12,9 @@ from aux_task_discovery.utils.constants import WANDB_PROJECT
 from aux_task_discovery.agents import get_agent
 
 
-def training_loop(config=None):
+def training_loop(args=None):
     # Start W&B run
-    wandb.init(project=WANDB_PROJECT, config=config)
+    wandb.init(project=WANDB_PROJECT, config=args)
     config = wandb.config
 
     # Set expirement seed
@@ -34,7 +26,6 @@ def training_loop(config=None):
     ptu.init_gpu(use_gpu=config.use_gpu, gpu_id=config.gpu_id)
 
     # Make env
-    #TODO Add **config.env_args if we need to pass additional arguments to the env constructer
     env = gym.make(config.env, seed=config.seed)
     assert isinstance(env.action_space, gym.spaces.Discrete), 'DQN requires discrete action space'
     

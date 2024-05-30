@@ -132,7 +132,7 @@ class GenTestAgent(BaseAgent):
         log_info.update(task_info)
 
         # Gen Test Update
-        if self.step_idx % self.replace_cycle == 0:
+        if self.step_idx % self.replace_cycle == 0 and self.n_replace > 0:
             # Get tasks with with age > self.age_threshold
             utils = self.task_utils[self.task_ages>self.age_threshold]
             if len(utils) > 0:

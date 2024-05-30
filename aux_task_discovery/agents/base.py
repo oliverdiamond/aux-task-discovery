@@ -45,7 +45,7 @@ class ReplayBuffer:
         '''
         Samples batch_size entries from the replay buffer.
         '''
-        rand_indices = self.rand_gen.randint(0, self.size, size=(batch_size,))
+        rand_indices = self.rand_gen.randint(0, self.size, size=batch_size)
         return {
             "observations": self.observations[rand_indices],
             "actions": self.actions[rand_indices],
@@ -111,6 +111,3 @@ class ReplayBuffer:
         self.truncateds[idx] = truncated
 
         self.n_inserts += 1
-
-    
-#TODO Write tests for replay buffer

@@ -51,3 +51,16 @@ TESTER_REG = {
 def get_tester(tester: str):
     assert tester in TESTER_REG, 'Given tester is not registered'
     return TESTER_REG[tester]
+
+
+#------------------------TESTS------------------------#
+def test_TraceTester():
+    pass
+
+
+
+def run_tests():
+    test_TraceTester()
+
+if __name__ == "__main__":
+    run_tests()

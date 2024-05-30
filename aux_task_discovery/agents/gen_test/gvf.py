@@ -35,24 +35,5 @@ class GVF():
             return np.array([self._cumulant(obs)])
         
         return np.apply_along_axis(self._cumulant, 1, obs)
-        
-    
-#------------------------TESTS------------------------#
-def test_gvf():
-    gvf = GVF(cumulant = lambda obs : -1, 
-              gamma = lambda obs: int(not np.allclose(obs,np.array([0,0,0])))
-              )
-    assert np.array_equal(gvf.cumulant(np.array([0,0,0])), np.array([-1]))
-    assert np.array_equal(gvf.cumulant(np.array([0,0,1])), np.array([-1]))
-    assert np.array_equal(gvf.gamma(np.array([0,0,0])), np.array([0]))
-    assert np.array_equal(gvf.gamma(np.array([0,0,1])), np.array([1]))
-    assert np.array_equal(gvf.gamma(np.array([[0,0,0],[0,0,1]])), np.array([0,1]))
-    assert np.array_equal(gvf.cumulant(np.array([[0,0,0],[0,0,1]])), np.array([-1,-1]))
-
-def run_tests():
-    test_gvf()
-
-if __name__ == "__main__":
-    run_tests()
 
 

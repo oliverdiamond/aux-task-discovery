@@ -68,7 +68,7 @@ class MasterUserNetwork(nn.Module):
         self.n_heads = n_aux_tasks + 1 # Includes head for main task
 
         if hidden_size % self.n_heads != 0:
-            warnings.warn('Master-User hidden layer size not divisable by number of output heads.\n Extra hidden features will be delegated to the main task.')
+            warnings.warn('Master-User hidden layer size not divisable by number of output heads. Extra hidden features will be delegated to the main task.')
         activation = _str_to_activation[activation]
         in_size = np.prod(input_shape)
         # Build shared representation

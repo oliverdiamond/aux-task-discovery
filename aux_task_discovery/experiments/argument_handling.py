@@ -29,12 +29,6 @@ def make_arg_parser():
                         nargs='+', 
                         default={},
                         help='Kwarg arguments passed to agent constructor')
-    parser.add_argument('--env_args', 
-                        type=str, 
-                        metavar='KEY=VALUE', 
-                        nargs='+', 
-                        default={},
-                        help='Kwarg arguments passed to environment constructor')
     return parser
 
 # Source: https://gist.github.com/fralau/061a4f6c13251367ef1d9a9a99fb3e8d
@@ -65,7 +59,7 @@ def parse_vars(items):
             d[key] = value
     return d
 
-DICT_ARGS_LIST = ['agent_args', 'env_args']
+DICT_ARGS_LIST = ['agent_args']
     
 def format_args(args):
     for arg_name in DICT_ARGS_LIST:
