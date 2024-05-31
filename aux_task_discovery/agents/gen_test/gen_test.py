@@ -99,7 +99,8 @@ class GenTestAgent(DQNAgent):
             return self.rand_gen.randint(0, self.n_actions)
         obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))['main'][0]
-        return random_argmax(q_vals)
+        act = random_argmax(q_vals)
+        return act
     
     def _step(
         self, 
@@ -135,31 +136,33 @@ class GenTestAgent(DQNAgent):
 
         # Gen Test Update
         if self.step_idx % self.replace_cycle == 0 and self.n_replace > 0:
-            # Get tasks with with age > self.age_threshold
-            utils = self.task_utils[self.task_ages>self.age_threshold]
-            if len(utils) > 0:
-                # Get idxs in origional task list for tasks in the above slice
-                idxs = np.arange(self.n_aux_tasks)[self.task_ages>self.age_threshold]
-                # Get idxs of (n_aux_tasks * replace_ratio) tasks with lowest util
-                curr_tasks = list(zip(utils, idxs))
-                curr_tasks.sort(key=lambda x : x[0])
-                idxs = [x[1] for x in curr_tasks[:self.n_replace]]
-                # Replace with new tasks
-                new_tasks = self.generator.generate_tasks(len(idxs))
-                self.tasks[idxs] = new_tasks
-                # Reset input and output weights and of features induced by the replaced tasks
-                self.model.reset_task_params(idxs)
-                # Set ages to 0 for new tasks
-                self.task_ages[idxs] = 0
+            self.update_tasks()
         
         return log_info
+    
+    def update_tasks(self):
+        # Get utils for tasks with with age > self.age_threshold
+        utils = self.task_utils[self.task_ages>self.age_threshold]
+        if len(utils) > 0:
+            # Get idxs in origional task list for tasks in the above slice
+            idxs = np.arange(self.n_aux_tasks)[self.task_ages>self.age_threshold]
+            # Get idxs of (n_aux_tasks * replace_ratio) tasks with lowest util
+            curr_tasks = list(zip(utils, idxs))
+            curr_tasks.sort(key=lambda x : x[0])
+            idxs = [x[1] for x in curr_tasks[:self.n_replace]]
+            # Replace with new tasks
+            new_tasks = self.generator.generate_tasks(len(idxs))
+            self.tasks[idxs] = new_tasks
+            # Reset input and output weights and of features induced by the replaced tasks
+            self.model.reset_task_params(idxs)
+            # Set ages to 0 for new tasks
+            self.task_ages[idxs] = 0
 
-    def get_loss(self):
+    def get_losses(self, batch: dict):
         '''
-        Samples batch from replay buffer and sums MSE loss for each output head.
+        Computes squarred TD error for each transition in batch for each output head.
         '''
         #TODO Check if this should be MSE over all output heads
-        batch = self.replay_buffer.sample(batch_size=self.batch_size)
         obs = batch["observations"]
         act = batch["actions"]
         rew = batch["rewards"]
@@ -172,26 +175,45 @@ class GenTestAgent(DQNAgent):
         # Dict with action-value estimates for next_obs for each output head from target model
         next_q_all = self.target_model(ptu.from_numpy(next_obs))
         
-        info = {}
+        losses = {}
         # Get loss for main task
         preds = preds_all['main'][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
         next_qs = next_q_all['main'].max(dim=-1)[0].detach()
         next_qs[terminated & ~truncated] = 0
         targets = ptu.from_numpy(rew) + (self.gamma * next_qs)
-        main_loss = ((targets - preds) ** 2).mean()
-        info['main_task_loss'] = main_loss.item()
+        main_loss = ((targets - preds) ** 2)
+        losses['main'] = main_loss
         
         # Get loss for aux tasks
-        total_loss = main_loss
         for i, task in enumerate(self.tasks):
             preds = preds_all[i][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
             next_qs = next_q_all[i].max(dim=-1)[0].detach()
             gammas = ptu.from_numpy(task.gamma(next_obs))
             cumulants = ptu.from_numpy(task.cumulant(next_obs))
             targets =  cumulants + (gammas * next_qs)
-            aux_loss = ((targets - preds) ** 2).mean()
-            info[f'aux_task_{i}_loss'] = aux_loss.item()
-            total_loss += aux_loss
+            aux_loss = ((targets - preds) ** 2)
+            losses[i] = aux_loss
         
-        info['total_loss'] = total_loss.item()
-        return total_loss, info
+        return losses
+
+    def train(self):
+        '''
+        Computes mean squared TD error on batch from replay buffer for each output head. 
+        Sums loss for each output head to compute total loss and updates model weights. 
+        Returns a dict containing loss metrics.
+        '''
+        self.model.train()
+        batch = self.replay_buffer.sample(batch_size=self.batch_size)
+        losses = self.get_losses(batch)
+        loss_info = {}
+        loss = losses['main'].mean()
+        loss_info['main_loss'] = loss.item()
+        for i in range(self.n_aux_tasks):
+            aux_loss = losses[i].mean()
+            loss += aux_loss
+            loss_info[f'aux_{i}_loss'] = aux_loss.item()
+        loss_info['total_loss'] = loss.item()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return loss_info

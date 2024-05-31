@@ -33,6 +33,8 @@ parameters:
         value: 2
       replace_ratio:
         value: 0
+      learning_start:
+        value: 1
       
       
 

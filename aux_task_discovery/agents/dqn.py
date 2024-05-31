@@ -76,7 +76,8 @@ class DQNAgent(BaseAgent):
             return self.rand_gen.randint(0, self.n_actions)
         obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))[0]
-        return random_argmax(q_vals)
+        act = random_argmax(q_vals)
+        return act
 
     def _step(
         self, 
@@ -104,11 +105,10 @@ class DQNAgent(BaseAgent):
             self._update_target_network()
         return log_info
 
-    def get_loss(self):
+    def get_losses(self, batch: dict):
         '''
-        Samples batch from replay buffer computes DQN loss
+        Computes squarred TD error for each transition in batch.
         '''
-        batch = self.replay_buffer.sample(batch_size=self.batch_size)
         obs = batch["observations"]
         act = batch["actions"]
         rew = batch["rewards"]
@@ -124,19 +124,20 @@ class DQNAgent(BaseAgent):
         # Get pred q_vals for current obs
         preds = self.model(ptu.from_numpy(obs))[torch.arange(obs.shape[0]), ptu.from_numpy(act)]
         
-        # Calculate MSE
+        # Calculate squared error for each transition
         losses = (targets - preds) ** 2
-        loss = losses.mean()
-        info = {'DQN_loss': loss.item()}
-        return loss, info
+        return losses
 
     def train(self):
         '''
-        Computes loss on batch from replay buffer and updates model weights.
+        Computes mean loss on batch from replay buffer and updates model weights.
         Returns a dict containing loss metrics.
         '''
         self.model.train()
-        loss, loss_info = self.get_loss()
+        batch = self.replay_buffer.sample(batch_size=self.batch_size)
+        losses = self.get_losses(batch)
+        loss = losses.mean()
+        loss_info = {'DQN_loss': loss.item()}
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
