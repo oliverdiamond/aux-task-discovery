@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 class BaseAgent(ABC):
+    def __init__(self, seed: int) -> None:
+        self.rand_gen = np.random.RandomState(seed)
+        self.step_idx = 1
+
     @abstractmethod
     def get_action(self, obs):
         raise NotImplementedError()
@@ -15,11 +19,25 @@ class BaseAgent(ABC):
         next_obs, 
         terminated,
         truncated,
-    ):
+    ) -> dict:
+        log_info = self._step(obs, act, rew, next_obs, terminated, truncated)
+        self.step_idx += 1
+        return log_info
+
+
+    @abstractmethod
+    def _step(self, 
+        obs, 
+        act,
+        rew, 
+        next_obs, 
+        terminated,
+        truncated,
+    ) -> dict:
         raise NotImplementedError()
     
     @abstractmethod
-    def train(self):
+    def train(self) -> dict:
         raise NotImplementedError()
 
 class ReplayBuffer:

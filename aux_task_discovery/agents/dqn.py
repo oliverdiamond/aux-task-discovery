@@ -22,6 +22,7 @@ class DQNAgent(BaseAgent):
         seed = 42,
         learning_rate = 0.0001, 
         epsilon = 0.1,
+        epsilon_final = 0.1,
         anneal_epsilon = False,
         n_anneal = 10000,
         gamma = 0.9,
@@ -34,30 +35,37 @@ class DQNAgent(BaseAgent):
         target_update_freq=100,
         learning_start = 100
     ):
+        super().__init__(seed=seed)
+        self.input_shape = input_shape
         self.n_actions = n_actions
-        self.rand_gen = np.random.RandomState(seed)
         self.epsilon = epsilon
+        self.epsilon_final = epsilon_final
         self.anneal_epsilon = anneal_epsilon
         self.n_anneal = n_anneal
         self.gamma = gamma
+        self.n_hidden = n_hidden
+        self.hidden_size = hidden_size
+        self.activation = activation
         self.batch_size = batch_size
         self.update_freq = update_freq
         self.target_update_freq = target_update_freq
         self.learning_start = learning_start
-        self.step_idx = 1
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
-        self.model = ActionValueNetwork(
-                        input_shape=input_shape,
-                        n_actions=n_actions,
-                        n_hidden=n_hidden,
-                        hidden_size=hidden_size,
-                        activation=activation,
-                        )
+        self._setup_model()
         self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
         self._update_target_network()
 
     def _update_target_network(self):
         self.target_model = copy.deepcopy(self.model)
+
+    def _setup_model(self):
+        self.model = ActionValueNetwork(
+                input_shape=self.input_shape,
+                n_actions=self.n_actions,
+                n_hidden=self.n_hidden,
+                hidden_size=self.hidden_size,
+                activation=self.activation,
+                )
 
     @torch.no_grad()
     def get_action(self, obs: np.ndarray):
@@ -70,7 +78,7 @@ class DQNAgent(BaseAgent):
         q_vals = ptu.to_numpy(self.model(obs))[0]
         return random_argmax(q_vals)
 
-    def step(
+    def _step(
         self, 
         obs: np.ndarray, 
         act: int,
@@ -87,14 +95,13 @@ class DQNAgent(BaseAgent):
         self.replay_buffer.insert(obs, act, rew, next_obs, terminated, truncated)
         if self.anneal_epsilon and self.step_idx <= self.n_anneal:
             # Linearly decreases epsilon from init value to 0.1 over n_anneal steps
-            self.epsilon -= (self.epsilon-0.1)/self.n_anneal
-            log_info['DQN_epsilon'] = self.epsilon
+            self.epsilon -= (self.epsilon-self.epsilon_final)/self.n_anneal
+            log_info['epsilon'] = self.epsilon
         if self.step_idx >= self.learning_start and self.step_idx % self.update_freq == 0:
             train_info = self.train()
             log_info.update(train_info)
         if self.step_idx % self.target_update_freq == 0:
             self._update_target_network()
-        self.step_idx += 1
         return log_info
 
     def get_loss(self):

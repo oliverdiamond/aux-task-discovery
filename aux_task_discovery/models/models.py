@@ -13,6 +13,7 @@ _str_to_activation = {
     "relu": nn.ReLU(),
     "tanh": nn.Tanh(),
     "sigmoid": nn.Sigmoid(),
+    "identity": nn.Identity(),
 }
 
 class ActionValueNetwork(nn.Module):
@@ -68,7 +69,7 @@ class MasterUserNetwork(nn.Module):
         self.n_heads = n_aux_tasks + 1 # Includes head for main task
 
         if hidden_size % self.n_heads != 0:
-            warnings.warn('Master-User hidden layer size not divisable by number of output heads. Extra hidden features will be delegated to the main task.')
+            print('Master-User hidden layer size not divisable by number of output heads. Extra hidden features will be delegated to the main task.')
         activation = _str_to_activation[activation]
         in_size = np.prod(input_shape)
         # Build shared representation
@@ -125,21 +126,34 @@ class MasterUserNetwork(nn.Module):
             return shared_features
 
     def reset_task_params(self, tasks: Sequence[int]):
+        '''
+        For each given task, resets the weights and biases for the shared features induced 
+        by the task and resets the weights for those features in each of the output heads.
+        '''
+        # NOTE Currently use the default pytorch initialization methods for linear layers
         if isinstance(tasks, int):
             tasks = [tasks]
         with torch.no_grad():
             for task in tasks:
-                # Reset weight and bias for task output head
-                self.aux_heads[task].reset_parameters()
-                # Reset weights for shared features induced by the task
-                # NOTE Currently use the default pytorch init methods for linear layers
-                start, stop = self.feature_ranges[task] # Get feature indicies for the task
+                # Get feature indicies for the task
+                start, stop = self.feature_ranges[task]
+
+                # Reset input weights for shared features induced by the task
                 new_w = init.kaiming_uniform_(self.shared_layer[1].weight.clone(), a=math.sqrt(5))
                 self.shared_layer[1].weight[start:stop,:] = new_w[start:stop,:]
-                # Reset bias for shared features induced by the task
+                # Reset input bias for shared features induced by the task
                 fan_in, _ = init._calculate_fan_in_and_fan_out(self.shared_layer[1].weight)
                 bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
                 new_b = init.uniform_(self.shared_layer[1].bias.clone(), -bound, bound)
                 self.shared_layer[1].bias[start:stop] = new_b[start:stop]
+
+                # Reset output weights on the main task head for features induced by the task 
+                dummy_weights = self.main_head.weight.clone()
+                new_w = init.kaiming_uniform_(dummy_weights, a=math.sqrt(5))
+                self.main_head.weight[:,start:stop] = new_w[:,start:stop]
+                # Reset output weights on aux task heads for features induced by the task 
+                for head in self.aux_heads:
+                    new_w = init.kaiming_uniform_(dummy_weights, a=math.sqrt(5))
+                    head.weight[:,start:stop] = new_w[:,start:stop]
 
 
