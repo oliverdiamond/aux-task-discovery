@@ -73,7 +73,7 @@ class DQNAgent(BaseAgent):
         Selects e-greedy action using q-values from model
         '''
         if self.rand_gen.rand() < self.epsilon:
-            return self.rand_gen.randint(0, self.n_actions)
+            return self.rand_gen.randint(self.n_actions)
         obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))[0]
         act = random_argmax(q_vals)

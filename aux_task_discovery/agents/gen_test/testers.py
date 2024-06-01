@@ -1,12 +1,9 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
 
 from aux_task_discovery.models import MasterUserNetwork
 import aux_task_discovery.utils.pytorch_utils as ptu
 
-class Tester(ABC):
-    @abstractmethod
+class Tester():
     def eval_tasks(self) -> np.ndarray:
         '''
         Compute task utilities for all auxillery tasks

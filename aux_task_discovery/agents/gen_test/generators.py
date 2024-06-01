@@ -1,5 +1,3 @@
-from abc import ABC, abstractmethod
-from collections import namedtuple
 from typing import Sequence
 
 import numpy as np
@@ -7,7 +5,7 @@ import numpy as np
 from aux_task_discovery.agents.gen_test.gvf import GVF
 from aux_task_discovery.envs import FourRoomsEnv
 
-class Generator(ABC):
+class Generator():
     def __init__(self, seed, **kwargs):
         self.rand_gen = np.random.RandomState(seed)
 
@@ -29,6 +27,7 @@ class OneHotGenerator(Generator):
         idx = self.rand_gen.randint(self.input_size)
         subgoal = np.zeros(self.input_size, dtype=np.float32)
         subgoal[idx] = 1
+        print(subgoal)
         cumulant = lambda obs : -1
         gamma = lambda obs : int(not np.allclose(obs,subgoal))
         return GVF(cumulant,gamma)

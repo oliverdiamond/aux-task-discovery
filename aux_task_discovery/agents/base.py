@@ -1,17 +1,13 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
 
-class BaseAgent(ABC):
+class BaseAgent():
     def __init__(self, seed: int) -> None:
         self.rand_gen = np.random.RandomState(seed)
         self.step_idx = 1
 
-    @abstractmethod
     def get_action(self, obs):
         raise NotImplementedError()
 
-    @abstractmethod
     def step(self, 
         obs, 
         act,
@@ -24,8 +20,6 @@ class BaseAgent(ABC):
         self.step_idx += 1
         return log_info
 
-
-    @abstractmethod
     def _step(self, 
         obs, 
         act,
@@ -36,7 +30,6 @@ class BaseAgent(ABC):
     ) -> dict:
         raise NotImplementedError()
     
-    @abstractmethod
     def train(self) -> dict:
         raise NotImplementedError()
 

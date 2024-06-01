@@ -51,6 +51,7 @@ class GenTestAgent(DQNAgent):
         self.replace_cycle = replace_cycle
         self.n_replace = round(n_aux_tasks * replace_ratio)
         self.task_ages = np.zeros(n_aux_tasks)
+        self.task_utils = None
         super().__init__(
             input_shape=input_shape,
             n_actions=n_actions,
@@ -96,7 +97,7 @@ class GenTestAgent(DQNAgent):
         Selects e-greedy action using q-values for main task from model
         '''
         if self.rand_gen.rand() < self.epsilon:
-            return self.rand_gen.randint(0, self.n_actions)
+            return self.rand_gen.randint(self.n_actions)
         obs = ptu.from_numpy(obs).unsqueeze(0)
         q_vals = ptu.to_numpy(self.model(obs))['main'][0]
         act = random_argmax(q_vals)
@@ -146,6 +147,7 @@ class GenTestAgent(DQNAgent):
         if len(utils) > 0:
             # Get idxs in origional task list for tasks in the above slice
             idxs = np.arange(self.n_aux_tasks)[self.task_ages>self.age_threshold]
+            print(idxs)
             # Get idxs of (n_aux_tasks * replace_ratio) tasks with lowest util
             curr_tasks = list(zip(utils, idxs))
             curr_tasks.sort(key=lambda x : x[0])

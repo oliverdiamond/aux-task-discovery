@@ -50,6 +50,7 @@ class ActionValueNetwork(nn.Module):
         '''
         return self.net(obs)
 
+
 class MasterUserNetwork(nn.Module):
     '''
     Multi-headed MLP for state-action values across any number of auxillery tasks. 
