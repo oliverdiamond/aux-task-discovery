@@ -16,10 +16,12 @@ def model():
         hidden_size=4,
         activation='identity'
     )
-    # Set all weights and biases to 1
     with torch.no_grad():
-        model.shared_layer[1].weight.fill_(1.)
-        model.shared_layer[1].bias.fill_(1.)
+        model.shared_layer[1].weight[0:2].fill_(1.)
+        model.shared_layer[1].weight[2:4].fill_(-1.)
+        model.shared_layer[1].bias[0:2].fill_(1.)
+        model.shared_layer[1].bias[2:4].fill_(-1.)
+
 
         model.main_head.weight[0].fill_(-1.)
         model.main_head.weight[1].fill_(1.)

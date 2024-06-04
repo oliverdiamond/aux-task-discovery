@@ -17,6 +17,8 @@ parameters:
     parameters: 
       tester: 
         value: 'trace'
+      gamma:
+        value: 1
       generator: 
         value: 'onehot'
       learning_rate:

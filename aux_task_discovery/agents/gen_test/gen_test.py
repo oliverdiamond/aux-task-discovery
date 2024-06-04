@@ -131,23 +131,24 @@ class GenTestAgent(DQNAgent):
         self.task_utils = self.tester.eval_tasks(observation=obs)
         task_info = {}
         for i in range(self.n_aux_tasks):
-            task_info[f'aux_task_{i}_age'] = self.task_ages[i]
-            task_info[f'aux_task_{i}_util'] = self.task_utils[i]
+            task_info[f'aux_{i}_age'] = self.task_ages[i]
+            task_info[f'aux_{i}_util'] = self.task_utils[i]
         log_info.update(task_info)
 
         # Gen Test Update
-        if self.step_idx % self.replace_cycle == 0 and self.n_replace > 0:
+        if self.step_idx >= self.learning_start and self.step_idx % self.replace_cycle == 0:
             self.update_tasks()
         
         return log_info
     
     def update_tasks(self):
+        if self.n_replace == 0:
+            return
         # Get utils for tasks with with age > self.age_threshold
         utils = self.task_utils[self.task_ages>self.age_threshold]
         if len(utils) > 0:
             # Get idxs in origional task list for tasks in the above slice
             idxs = np.arange(self.n_aux_tasks)[self.task_ages>self.age_threshold]
-            print(idxs)
             # Get idxs of (n_aux_tasks * replace_ratio) tasks with lowest util
             curr_tasks = list(zip(utils, idxs))
             curr_tasks.sort(key=lambda x : x[0])
@@ -218,4 +219,6 @@ class GenTestAgent(DQNAgent):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        #print(self.model.shared_layer[1].weight.grad)
+        #print(self.model.shared_layer[1].bias.grad)
         return loss_info

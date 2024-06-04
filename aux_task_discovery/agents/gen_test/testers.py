@@ -21,13 +21,13 @@ class TraceTester(Tester):
         self.trace = np.zeros(model.hidden_size)
 
     def eval_tasks(self, observation: np.ndarray, **kwargs) -> np.ndarray:
-        # Get shared features for current obs
+        # Get magnitude of shared features for current obs
         obs = ptu.from_numpy(observation).unsqueeze(0)
-        features = ptu.to_numpy(self.model.get_shared_features(obs))[0]
+        feature_magnitudes = np.absolute(ptu.to_numpy(self.model.get_shared_features(obs))[0])
         # Get trace for all features
-        self.trace = (1-self.tau) * self.trace + self.tau * features
+        self.trace = (1-self.tau) * self.trace + self.tau * feature_magnitudes
         # Get sum of weight magnitudes across all actions on main task for each feature
-        w_main = np.abs(ptu.to_numpy(self.model.main_head.weight)).sum(0)
+        w_main = np.sum(np.absolute(ptu.to_numpy(self.model.main_head.weight)), axis=0)
         # Get feature utilities
         feature_utils = w_main*self.trace
         # Get aux_task utilities

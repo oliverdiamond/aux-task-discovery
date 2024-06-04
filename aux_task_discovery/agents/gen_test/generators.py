@@ -27,7 +27,6 @@ class OneHotGenerator(Generator):
         idx = self.rand_gen.randint(self.input_size)
         subgoal = np.zeros(self.input_size, dtype=np.float32)
         subgoal[idx] = 1
-        print(subgoal)
         cumulant = lambda obs : -1
         gamma = lambda obs : int(not np.allclose(obs,subgoal))
         return GVF(cumulant,gamma)

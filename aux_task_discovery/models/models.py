@@ -86,7 +86,7 @@ class MasterUserNetwork(nn.Module):
         stop = (hidden_size // self.n_heads) + (hidden_size % self.n_heads)
         for i in range(self.n_heads):
             # Sets gradient to 0 during backward pass for all hidden features not shaped by this output head
-            def backward_hook(module, grad_input, grad_output):
+            def backward_hook(module, grad_input, grad_output, start=start, stop=stop):
                 new_grad = torch.zeros_like(grad_input[0])
                 new_grad[:,start:stop] = grad_input[0][:,start:stop]
                 return (new_grad,)

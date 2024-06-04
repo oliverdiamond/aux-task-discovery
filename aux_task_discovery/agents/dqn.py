@@ -20,7 +20,7 @@ class DQNAgent(BaseAgent):
         input_shape: tuple,
         n_actions: int,
         seed = 42,
-        learning_rate = 0.0001, 
+        learning_rate = 0.01, 
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,
