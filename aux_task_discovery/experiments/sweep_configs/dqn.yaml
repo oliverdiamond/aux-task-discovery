@@ -1,4 +1,4 @@
-name: dqn_hallway_3seeds_gamma=1
+name: dqn_hallway_3seeds
 method: grid
 parameters: 
   env:
