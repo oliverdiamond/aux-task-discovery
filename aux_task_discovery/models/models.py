@@ -131,9 +131,7 @@ class MasterUserNetwork(nn.Module):
         For each given task, resets the weights and biases for the shared features induced 
         by the task and resets the weights for those features in each of the output heads.
         '''
-        # NOTE Currently use the default pytorch initialization methods for linear layers
-        if isinstance(tasks, int):
-            tasks = [tasks]
+        # NOTE Currently using the default pytorch weight and bias initialization for linear layers
         with torch.no_grad():
             for task in tasks:
                 # Get feature indicies for the task

@@ -177,9 +177,9 @@ class GenTestAgent(DQNAgent):
         preds_all = self.model(ptu.from_numpy(obs))
         # Dict with action-value estimates for next_obs for each output head from target model
         next_q_all = self.target_model(ptu.from_numpy(next_obs))
-        
-        losses = {}
+
         # Get loss for main task
+        losses = {}
         preds = preds_all['main'][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
         next_qs = next_q_all['main'].max(dim=-1)[0].detach()
         next_qs[terminated & ~truncated] = 0
@@ -219,6 +219,4 @@ class GenTestAgent(DQNAgent):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        #print(self.model.shared_layer[1].weight.grad)
-        #print(self.model.shared_layer[1].bias.grad)
         return loss_info

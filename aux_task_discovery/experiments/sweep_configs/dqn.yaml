@@ -1,4 +1,4 @@
-name: dqn_hallway_3seeds
+name: fourrooms_dqn
 method: grid
 parameters: 
   env:

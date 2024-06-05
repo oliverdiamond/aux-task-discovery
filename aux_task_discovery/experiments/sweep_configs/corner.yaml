@@ -1,4 +1,4 @@
-name: fourrooms_corner_3seeds
+name: fourrooms_corner
 method: grid
 parameters: 
   env:
