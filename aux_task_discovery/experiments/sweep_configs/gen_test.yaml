@@ -1,0 +1,49 @@
+name: fourrooms_gentest
+method: grid
+parameters: 
+  env:
+    value: 'fourrooms'
+  agent:
+    value: 'gentest'
+  use_gpu:
+    value: False
+  gpu_id:
+    value: Null
+  seed:
+    values: [4,5] #[1,2,3,4,5,6,7,8,9,10]
+  n_steps:
+    value: 20000
+  agent_args:
+    parameters: 
+      tester: 
+        value: 'trace'
+      generator: 
+        value: 'onehot'
+      epsilon:
+        value: 0.1
+      gamma:
+        value: 1
+      learning_rate:
+        values: [0.01]
+      learning_start:
+        value: 1
+      hidden_size:
+        value: 36
+      buffer_size:
+        value: 500
+      batch_size: 
+        value: 16
+      target_update_freq:
+        value: 100
+      n_aux_tasks:
+        value: 5
+      age_threshold: 
+        value: 0
+      replace_ratio:
+        value: 0.2
+      replace_cycle:
+        value: 500
+      tester_tau:
+        value: 0.05
+      
+      

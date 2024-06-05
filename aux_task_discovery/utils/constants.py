@@ -1,0 +1,1 @@
+WANDB_PROJECT = 'aux_task_discovery'

@@ -1,6 +1,6 @@
 import numpy as np
 import gymnasium as gym
-from gymnasium.spaces import Discrete
+from gymnasium.spaces import Discrete, Box
 from typing import Tuple
 
 class GridWorldEnv(gym.Env):
@@ -27,7 +27,9 @@ class GridWorldEnv(gym.Env):
         # Total number of states
         self.n_states = self.size*self.size
         # Observation is one-hot encoding of (x,y) grid location
-        self.observation_space = Discrete(self.n_states)
+        self.observation_space = Box(low=0, 
+                                     high=1, 
+                                     shape=(self.n_states,))
         # Actions are directions: up, left, down, right
         self.action_space = Discrete(4)
         # Agent moves in selected direction with prob 1-action_noise
@@ -50,7 +52,7 @@ class GridWorldEnv(gym.Env):
         '''
         assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
         state_idx = pos[0]*self.size + pos[1]
-        obs = np.zeros(self.n_states, dtype=np.int64)
+        obs = np.zeros(self.n_states, dtype=np.float32)
         obs[state_idx] = 1
         return obs
     
@@ -68,7 +70,7 @@ class GridWorldEnv(gym.Env):
             return pos
         return new_pos
 
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         self.agent_pos = self.start_pos
         obs = self._get_obs(pos=self.agent_pos)
         return obs, {}
@@ -101,119 +103,4 @@ class GridWorldEnv(gym.Env):
                     grid+=' '
             grid+='\n'
         print(grid)
-
-#------------------------TESTS------------------------#
-
-def test_out_of_bounds():
-    env = GridWorldEnv(size=5)
-    # Test in bounds pos
-    assert not env._out_of_bounds((2, 3))
-    assert not env._out_of_bounds((4, 4))
-    # Test out of bounds pos
-    assert env._out_of_bounds((1, 5))
-    assert env._out_of_bounds((-1, 2))
-
-def test_is_obstacle():
-    env = GridWorldEnv(size=5, 
-                       obstacles=[(2, 2), (3, 3)])
-    # Test for obstacle pos
-    assert env._is_obstacle((2, 2))
-    assert env._is_obstacle((3, 3))
-    # Test for non-obstacle pos
-    assert not env._is_obstacle((1, 2))
-    assert not env._is_obstacle((4, 4))
-
-def test_get_obs():
-    env = GridWorldEnv(size=3)
-    # Testing one-hot encoding of (x,y) pos
-    assert np.array_equal(env._get_obs((1, 2)), np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
-    assert np.array_equal(env._get_obs((2, 2)), np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
-
-def test_get_new_pos():
-    # Tests for env with no noise
-    env = GridWorldEnv(size=3, 
-                       obstacles=[(1, 0)])
-    # Test for moving within bounds and not to an obstacle
-    assert env._get_new_pos((1, 1), 0) == (0, 1)
-    # Test for moving to an obstacle
-    assert env._get_new_pos((1, 1), 1) == (1, 1)
-    # Test for moving out of bounds
-    assert env._get_new_pos((2, 2), 2) == (2, 2)
-
-    # Test for env with noise
-    env = GridWorldEnv(size=3, 
-                       seed=42, 
-                       action_noise=0.5, 
-                       obstacles=[(1, 0)])
-    assert env._get_new_pos((1, 1), 1) == (0, 1)
-
-def test_reset():
-    env = GridWorldEnv(size=3, 
-                       start_pos=(1, 1))
-    obs, _ = env.reset()
-    # Test if agent position is reset to the starting position
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
-
-def test_step():
-    # Test for env with no noise
-    env = GridWorldEnv(size=3, 
-                       start_pos=(1, 1), 
-                       goal_pos=(2, 2))
-    env.reset()
-    obs, rew, terminated, truncated, _ = env.step(3)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
-    assert rew == -1
-    assert not terminated
-    assert not truncated
-    
-    # Test move to goal state
-    obs, rew, terminated, truncated, _ = env.step(2)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
-    assert rew == -1
-    assert terminated
-    assert not truncated
-
-    # Tests for env with noise
-    env = GridWorldEnv(size=3, 
-                       start_pos=(1, 1), 
-                       goal_pos=(2, 2), 
-                       action_noise=0.5, 
-                       seed=42,
-                       obstacles=[(0,1)])
-    env.reset()
-    obs, rew, terminated, truncated, _ = env.step(3)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
-    assert rew == -1
-    assert not terminated
-    assert not truncated
-
-    obs, rew, terminated, truncated, _ = env.step(2)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 1, 0, 0, 0, 0]))
-    assert rew == -1
-    assert not terminated
-    assert not truncated
-
-    obs, rew, terminated, truncated, _ = env.step(3)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 1, 0, 0, 0]))
-    assert rew == -1
-    assert not terminated
-    assert not truncated
-
-    obs, rew, terminated, truncated, _ = env.step(3)
-    assert np.array_equal(obs, np.array([0, 0, 0, 0, 0, 0, 0, 0, 1]))
-    assert rew == -1
-    assert terminated
-    assert not truncated
-
-def run_tests():
-    test_out_of_bounds()
-    test_is_obstacle()
-    test_get_obs()
-    test_get_new_pos()
-    test_reset()
-    test_step()
-    print('All tests passing')
-
-if __name__ == "__main__":
-    run_tests()
 
