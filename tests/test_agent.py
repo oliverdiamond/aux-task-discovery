@@ -403,7 +403,7 @@ def test_GenTestAgent_train(gentest_agent, gentest_batch):
                 np.array([1.0,1.0,4.0])
             )
 
-def test_GenTestAgent_dqn_update(gentest_agent, gentest_batch):
+def test_GenTestAgent_step_with_dqn_update(gentest_agent, gentest_batch):
     batch = gentest_batch
     assert gentest_agent.step_idx == 1
     info = gentest_agent.step(
@@ -465,7 +465,7 @@ def test_GenTestAgent_dqn_update(gentest_agent, gentest_batch):
             )
     
 
-def test_GenTestAgent_task_update(gentest_batch):
+def test_GenTestAgent_step_with_task_update(gentest_batch):
     batch = gentest_batch
     gentest_agent = GenTestAgent(
         input_shape = (2,),

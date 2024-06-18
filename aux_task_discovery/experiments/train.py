@@ -81,6 +81,8 @@ def training_loop(args=None):
         # Log metrics
         wandb.log(step_log)
 
+    wandb.finish()
+
 
 
 

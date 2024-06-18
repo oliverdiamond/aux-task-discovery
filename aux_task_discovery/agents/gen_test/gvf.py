@@ -22,7 +22,7 @@ class GVF():
             prob = np.array([self._gamma(obs)])
         else:
             prob = np.apply_along_axis(self._gamma, 1, obs)
-        assert np.all((prob >= 0) & (prob <= 1)), 'GVF continuation function did not return value in range [0,1]'
+        assert np.all((prob >= 0) & (prob <= 1)), 'GVF gamma did not return value in range [0,1]'
         
         return prob
     

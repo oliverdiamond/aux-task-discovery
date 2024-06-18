@@ -38,6 +38,7 @@ class ReplayBuffer:
         self.max_size = capacity
         self.rand_gen = np.random.RandomState(seed)
         self.n_inserts = 0
+        self.last_batch = None
         self.observations = None
         self.actions = None
         self.rewards = None
@@ -57,7 +58,7 @@ class ReplayBuffer:
         Samples batch_size entries from the replay buffer.
         '''
         rand_indices = self.rand_gen.randint(0, self.size, size=batch_size)
-        return {
+        batch = {
             "observations": self.observations[rand_indices],
             "actions": self.actions[rand_indices],
             "rewards": self.rewards[rand_indices],
@@ -65,6 +66,8 @@ class ReplayBuffer:
             "terminateds": self.terminateds[rand_indices],
             "truncateds": self.truncateds[rand_indices],
         }
+        self.last_batch = batch
+        return batch
 
     def insert(
         self,

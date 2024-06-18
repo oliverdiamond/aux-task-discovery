@@ -28,4 +28,4 @@ parameters:
       target_update_freq:
         value: 100
       learning_start:
-        value: 1
+        value: 500

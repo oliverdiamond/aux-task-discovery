@@ -1,8 +1,8 @@
-name: maze_gentest_lr_sweep
+name: fourrooms_gentest_new_trace
 method: grid
 parameters: 
   env:
-    value: 'maze'
+    value: 'fourrooms'
   agent:
     value: 'gentest'
   use_gpu:
@@ -10,9 +10,9 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [1,2,3,4,5,6,7,8,9,10]
+    values: [4,5,6]
   n_steps:
-    value: 30000
+    value: 20000
   agent_args:
     parameters: 
       tester: 
@@ -24,25 +24,24 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        values: [0.00025, 0.001, 0.004]
+        values: [0.01, 0.0025]
       learning_start:
         value: 500
       hidden_size:
-        value: 405
+        value: 36
       buffer_size:
-        value: 1000
+        value: 500
       batch_size: 
         value: 16
       target_update_freq:
         value: 100
       n_aux_tasks:
         value: 5
-      age_threshold: 
+      age_threshold:
         value: 0
       replace_ratio:
         value: 0.2
       replace_cycle:
-        value: 500
+        values: [500, 1000]
       tester_tau:
         value: 0.05
-

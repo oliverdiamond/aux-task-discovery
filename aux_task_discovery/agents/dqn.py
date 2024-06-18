@@ -52,7 +52,7 @@ class DQNAgent(BaseAgent):
         self.learning_start = learning_start
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
         self._setup_model()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, betas=(0.0, 0.999))
         self._update_target_network()
 
     def _update_target_network(self):
