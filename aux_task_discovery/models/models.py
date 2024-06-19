@@ -43,12 +43,25 @@ class ActionValueNetwork(nn.Module):
         # Add output layer
         layers.append(nn.Linear(in_size, n_actions))
         self.net = nn.Sequential(*layers).to(ptu.device)
+        # Initialize all weights and biases
+        self.init_weights()
 
     def forward(self, obs: torch.FloatTensor):
         '''
         Returns Q-values for all actions
         '''
         return self.net(obs)
+
+    @torch.no_grad()
+    def init_weights(self):
+        '''
+        Initialize all network weights using Xavier uniform initialization and all biases to 0
+        '''
+        def linear_init(m):
+            if isinstance(m, nn.Linear):
+                init.xavier_uniform_(m.weight)
+                init.zeros_(m.bias)
+        self.net.apply(linear_init)
 
 
 class MasterUserNetwork(nn.Module):
@@ -105,7 +118,8 @@ class MasterUserNetwork(nn.Module):
         
         self.main_head = main_head.to(ptu.device)
         self.aux_heads = nn.ModuleList(aux_heads).to(ptu.device)
-
+        # Initialize all weights and biases
+        self.init_weights()
 
     def forward(self, obs: torch.FloatTensor) -> Dict[Any, torch.FloatTensor]:
         '''
@@ -117,43 +131,44 @@ class MasterUserNetwork(nn.Module):
         outputs['main'] = self.main_head(shared_features)
         return outputs
     
+    @torch.no_grad()
+    def init_weights(self):
+        '''
+        Initialize all network weights using Xavier uniform initialization and all biases to 0
+        '''
+        init.xavier_uniform_(self.shared_layer[1].weight)
+        init.zeros_(self.shared_layer[1].bias)
+        init.xavier_uniform_(self.main_head.weight)
+        init.zeros_(self.main_head.bias)
+        for i in np.arange(self.n_aux_tasks):
+            init.xavier_uniform_(self.aux_heads[i].weight)
+            init.zeros_(self.aux_heads[i].bias)
+    
+    @torch.no_grad()
     def get_shared_features(self, obs: torch.FloatTensor) -> torch.FloatTensor:
         '''
         Get features produced by the hidden layer which are shared across all task heads 
         for a given observation
         '''
-        with torch.no_grad():
-            shared_features = self.shared_layer(obs)
-            return shared_features
+        shared_features = self.shared_layer(obs)
+        return shared_features
 
+    @torch.no_grad()
     def reset_task_params(self, tasks: Sequence[int]):
         '''
         For each given task, resets the weights and biases for the shared features induced 
         by the task and resets the weights for those features in each of the output heads.
         '''
-        # NOTE Currently using the default pytorch weight and bias initialization for linear layers
-        with torch.no_grad():
-            for task_idx in tasks:
-                # Get feature indicies for the task
-                start, stop = self.feature_ranges[task_idx]
-
-                # Reset input weights for shared features induced by the task
-                new_w = init.kaiming_uniform_(self.shared_layer[1].weight.clone(), a=math.sqrt(5))
-                self.shared_layer[1].weight[start:stop,:] = new_w[start:stop,:]
-                # Reset input bias for shared features induced by the task
-                #fan_in, _ = init._calculate_fan_in_and_fan_out(self.shared_layer[1].weight)
-                #bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
-                #new_b = init.uniform_(self.shared_layer[1].bias.clone(), -bound, bound)
-                #self.shared_layer[1].bias[start:stop] = new_b[start:stop]
-
-                # Reset output weights on the main task head for features induced by the task 
-                dummy_weights = self.main_head.weight.clone()
-                new_w = init.kaiming_uniform_(dummy_weights, a=math.sqrt(5))
-                self.main_head.weight[:,start:stop] = new_w[:,start:stop]
-                # Reset output weights on aux task heads for features induced by the task 
-                for idx, head in enumerate(self.aux_heads):
-                    new_w = init.kaiming_uniform_(dummy_weights, a=math.sqrt(5))
-                    if idx == task_idx:
-                        head.weight[:] = new_w
-                    else:
-                        head.weight[:,start:stop] = new_w[:,start:stop]
+        for task_idx in tasks:
+            # Get feature indicies for the task
+            start, stop = self.feature_ranges[task_idx]
+            # Reset input weights for shared features induced by the task
+            init.xavier_uniform_(self.shared_layer[1].weight[start:stop,:])
+            # Reset output weights on the main task head for features induced by the task 
+            init.xavier_uniform_(self.main_head.weight[:,start:stop])
+            # Reset output weights on aux task heads for features induced by the task 
+            for i in np.arange(self.n_aux_tasks):
+                if i == task_idx:
+                    init.xavier_uniform_(self.aux_heads[i].weight)
+                else:
+                    init.xavier_uniform_(self.aux_heads[i].weight[:,start:stop])

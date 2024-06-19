@@ -1,4 +1,4 @@
-name: fourrooms_gentest_new_trace
+name: fourrooms_gentest_new_trace_new_init
 method: grid
 parameters: 
   env:
