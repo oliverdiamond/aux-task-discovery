@@ -78,6 +78,7 @@ class MasterUserNetwork(nn.Module):
         activation = 'tanh',
     ):
         super().__init__()
+        assert hidden_size >= n_aux_tasks+1, 'Hidden layer size must be >= n_aux_tasks+1'
         self.hidden_size = hidden_size
         self.n_aux_tasks = n_aux_tasks
         self.n_heads = n_aux_tasks + 1 # Includes head for main task

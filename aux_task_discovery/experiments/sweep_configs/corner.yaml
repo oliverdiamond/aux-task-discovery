@@ -16,7 +16,7 @@ parameters:
   agent_args:
     parameters: 
       tester: 
-        value: 'trace'
+        value: 'batch_trace'
       generator: 
         value: 'fourrooms_corner'
       epsilon:

@@ -81,7 +81,7 @@ def test_DQNAgent_get_action(epsilon, expected):
     assert action == expected
 
 def test_DQNAgent_get_losses(dqn_agent, dqn_batch):
-    losses = dqn_agent.get_losses(dqn_batch)
+    losses = dqn_agent._get_losses(dqn_batch)
     assert np.allclose(ptu.to_numpy(losses), np.array([21.16, 6.76, 9]))
 
 def test_DQNAgent_train(dqn_agent, dqn_batch):
@@ -270,6 +270,7 @@ def test_GenTestAgent_get_action(epsilon, expected):
         input_shape = (2,),
         n_actions = 2,
         seed = 42,
+        n_aux_tasks=1,
         generator = 'onehot',
         tester = 'trace',
         epsilon = epsilon,
@@ -307,7 +308,7 @@ def test_GenTestAgent_update_tasks():
         anneal_epsilon = False,
         n_anneal = 10000,
         gamma = 0.9,
-        hidden_size = 2,
+        hidden_size = 5,
         activation = 'identity',
         buffer_size = 1000,
         batch_size = 2,
@@ -324,7 +325,7 @@ def test_GenTestAgent_update_tasks():
     assert gentest_agent.tasks[3].gamma(np.array([1.0, 0.0, 0.0])) == 1.0
     gentest_agent.task_ages = np.array([1,2,2,2])
     gentest_agent.task_utils = np.array([1, 10, 3, 4])
-    gentest_agent.update_tasks()
+    gentest_agent._update_tasks()
     # First task should not be updated due to age
     assert gentest_agent.tasks[0].gamma(np.array([0.0, 0.0, 1.0])) == 0.0
     # Second task should not be updated due to higher utility than third and fourth tasks
@@ -337,7 +338,7 @@ def test_GenTestAgent_update_tasks():
     assert np.allclose(gentest_agent.task_ages, np.array([1,2,0,0]))
 
 def test_GenTestAgent_get_losses(gentest_agent, gentest_batch):
-    losses = gentest_agent.get_losses(gentest_batch)
+    losses = gentest_agent._get_losses(gentest_batch)
     assert np.allclose(ptu.to_numpy(losses['main']), np.array([13.69, 1.0, 0.49]))
     assert np.allclose(ptu.to_numpy(losses[0]), np.array([4.0, 1.0, 16.0]))
     assert np.allclose(ptu.to_numpy(losses[1]), np.array([1.0, 16.0, 1.0]))
@@ -472,10 +473,10 @@ def test_GenTestAgent_step_with_task_update(gentest_batch):
         n_actions = 2,
         generator = 'onehot',
         tester = 'trace',
-        n_aux_tasks = 2,
+        n_aux_tasks = 3,
         age_threshold = 0,
         replace_cycle = 2,
-        replace_ratio = 0.5,
+        replace_ratio = 0.33,
         tester_tau = 0.05,
         seed = 42,
         learning_rate = 0.01, 
@@ -484,20 +485,23 @@ def test_GenTestAgent_step_with_task_update(gentest_batch):
         anneal_epsilon = False,
         n_anneal = 10000,
         gamma = 0.9,
-        hidden_size = 3,
+        hidden_size = 4,
         activation = 'identity',
         buffer_size = 1000,
         batch_size = 2,
         update_freq = 3,
         target_update_freq=3,
-        learning_start = 2,
+        learning_start = 1,
     )
     with torch.no_grad():
-        gentest_agent.model.shared_layer[1].weight.fill_(1.)
-        gentest_agent.model.shared_layer[1].bias.fill_(1.)
+        gentest_agent.model.shared_layer[1].weight[0:3].fill_(1.)
+        gentest_agent.model.shared_layer[1].bias[0:3].fill_(1.)
+        gentest_agent.model.shared_layer[1].weight[3].fill_(2.)
+        gentest_agent.model.shared_layer[1].bias[3].fill_(2.)
         gentest_agent.model.main_head.weight[:,0].fill_(1.)
         gentest_agent.model.main_head.weight[:,1].fill_(1.)
         gentest_agent.model.main_head.weight[:,2].fill_(-2.)
+        gentest_agent.model.main_head.weight[:,3].fill_(-2.)
         gentest_agent.model.main_head.bias.fill_(1.)
 
         for head in gentest_agent.model.aux_heads:
@@ -505,6 +509,7 @@ def test_GenTestAgent_step_with_task_update(gentest_batch):
             head.bias.fill_(1.)
     gentest_agent._update_target_network()
     assert gentest_agent.step_idx == 1
+    assert gentest_agent.n_replace == 1
 
     gentest_agent.step(
         batch['observations'][0], 
@@ -515,8 +520,9 @@ def test_GenTestAgent_step_with_task_update(gentest_batch):
         batch['truncateds'][0]
         )
     assert gentest_agent.step_idx == 2
-    assert np.array_equal(gentest_agent.task_ages, np.array([1,1]))
-    assert np.allclose(gentest_agent.task_utils, np.array([0.2,0.4]))
+    assert np.array_equal(gentest_agent.task_ages, np.array([1,1,1]))
+    assert np.allclose(gentest_agent.tester.trace, np.array([0.1,0.1,0.1,0.2]))
+    assert np.allclose(gentest_agent.task_utils, np.array([0.2,0.4,0.8]))
     old_model = copy.deepcopy(gentest_agent.model)
 
     gentest_agent.step(
@@ -528,23 +534,43 @@ def test_GenTestAgent_step_with_task_update(gentest_batch):
         batch['truncateds'][0]
         )
     assert gentest_agent.step_idx == 3
-    assert np.array_equal(gentest_agent.task_ages, np.array([0,2]))
-    assert np.allclose(gentest_agent.task_utils, np.array([0.39,0.78]))
-    # Check that weights for the features induced by the first aux task have been reset in all output heads.
-    assert not torch.allclose(gentest_agent.model.main_head.weight[:,1], old_model.main_head.weight[:,1])
-    assert not torch.allclose(gentest_agent.model.aux_heads[0].weight[:,1], old_model.aux_heads[0].weight[:,1])
-    assert not torch.allclose(gentest_agent.model.aux_heads[1].weight[:,1], old_model.aux_heads[1].weight[:,1])
-    # Check that the other weights have not been reset for each output head 
-    assert torch.allclose(gentest_agent.model.main_head.weight[:,[0,2]], old_model.main_head.weight[:,[0,2]])
-    assert torch.allclose(gentest_agent.model.aux_heads[0].weight[:,[0,2]], old_model.aux_heads[0].weight[:,[0,2]])
-    assert torch.allclose(gentest_agent.model.aux_heads[1].weight[:,[0,2]], old_model.aux_heads[1].weight[:,[0,2]])
-    # Check that biases have not been reset for each output head 
+    assert np.array_equal(gentest_agent.task_ages, np.array([0,2,2]))
+    assert np.allclose(gentest_agent.tester.trace, np.array([0.195,0.2925,0.195,0.39]))
+    assert np.allclose(gentest_agent.task_utils, np.array([0.39,0.78,1.56]))
+
+    # Indicies for features induced by task 0, which has been reset
+    start, stop = (1,2)
+    # For each output head, check that weights for the features induced by task 0 have been reset.
+    assert not torch.allclose(gentest_agent.model.main_head.weight[:,start:stop], old_model.main_head.weight[:,start:stop])
+    assert torch.allclose(gentest_agent.model.main_head.weight[:,:start], old_model.main_head.weight[:,:start])
+    assert torch.allclose(gentest_agent.model.main_head.weight[:,stop:], old_model.main_head.weight[:,stop:])
+
+    for idx in range(gentest_agent.model.n_aux_tasks):
+        if idx == 0:
+            assert not torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+            assert not torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+            assert not torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+        else:
+            assert not torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+            assert torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+            assert torch.allclose(gentest_agent.model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+
+    # Check that input weights for the features induced by task 0 have been reset
+    assert not torch.allclose(gentest_agent.model.shared_layer[1].weight[start:stop,:], old_model.shared_layer[1].weight[start:stop,:])
+    assert torch.allclose(gentest_agent.model.shared_layer[1].weight[:start,:], old_model.shared_layer[1].weight[:start,:])
+    assert torch.allclose(gentest_agent.model.shared_layer[1].weight[stop:,:], old_model.shared_layer[1].weight[stop:,:])
+
+    # Check that no biases are reset
+    assert torch.allclose(gentest_agent.model.shared_layer[1].bias, old_model.shared_layer[1].bias)
     assert torch.allclose(gentest_agent.model.main_head.bias, old_model.main_head.bias)
-    assert torch.allclose(gentest_agent.model.aux_heads[0].bias, old_model.aux_heads[0].bias)
-    assert torch.allclose(gentest_agent.model.aux_heads[1].bias, old_model.aux_heads[1].bias)
-    # Check that the input weights and biases for the features induced by the first aux task have been reset.
-    assert not torch.allclose(gentest_agent.model.shared_layer[1].weight[1], old_model.shared_layer[1].weight[1])
-    assert not torch.allclose(gentest_agent.model.shared_layer[1].bias[1], old_model.shared_layer[1].bias[1])
-    # Check that the other input weights and biases have not been reset
-    assert torch.allclose(gentest_agent.model.shared_layer[1].weight[[0,2]], old_model.shared_layer[1].weight[[0,2]])
-    assert torch.allclose(gentest_agent.model.shared_layer[1].bias[[0,2]], old_model.shared_layer[1].bias[[0,2]])
+    for i in range(gentest_agent.model.n_aux_tasks):
+        assert torch.allclose(gentest_agent.model.aux_heads[i].bias, old_model.aux_heads[i].bias)
+
+    # Check that target net has been updated after task update
+    assert torch.allclose(gentest_agent.model.shared_layer[1].weight, gentest_agent.target_model.shared_layer[1].weight)
+    assert torch.allclose(gentest_agent.model.shared_layer[1].bias, gentest_agent.target_model.shared_layer[1].bias)
+    assert torch.allclose(gentest_agent.model.main_head.weight, gentest_agent.target_model.main_head.weight)
+    assert torch.allclose(gentest_agent.model.main_head.bias, gentest_agent.target_model.main_head.bias)
+    for i in range(gentest_agent.model.n_aux_tasks):
+        assert torch.allclose(gentest_agent.model.aux_heads[i].weight, gentest_agent.target_model.aux_heads[i].weight)
+        assert torch.allclose(gentest_agent.model.aux_heads[i].bias, gentest_agent.target_model.aux_heads[i].bias)

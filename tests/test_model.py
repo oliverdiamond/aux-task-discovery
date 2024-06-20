@@ -88,7 +88,27 @@ def test_MasterUserNetwork_get_shared_features(master_user_model, obs, expected)
     assert np.allclose(shared_features, expected)
 
 @pytest.mark.parametrize("tasks",[[0],[1]])
-def test_MasterUserNetwork_reset_task_params(master_user_model, tasks):
+def test_MasterUserNetwork_reset_task_params(tasks):
+    master_user_model = MasterUserNetwork(
+        input_shape=(2,),
+        n_actions=2,
+        n_aux_tasks=3,
+        hidden_size=4,
+        activation='identity'
+    )
+    # Set all weights and biases to 1
+    with torch.no_grad():
+        master_user_model.shared_layer[1].weight.fill_(1.)
+        master_user_model.shared_layer[1].bias.fill_(1.)
+
+        master_user_model.main_head.weight[0].fill_(-1.)
+        master_user_model.main_head.weight[1].fill_(1.)
+        master_user_model.main_head.bias.fill_(1.)
+
+        for head in master_user_model.aux_heads:
+            head.weight.fill_(1.)
+            head.bias.fill_(1.)
+
     old_model = copy.deepcopy(master_user_model)
     master_user_model.reset_task_params(tasks)
     for task in tasks:
@@ -100,41 +120,73 @@ def test_MasterUserNetwork_reset_task_params(master_user_model, tasks):
         assert torch.allclose(master_user_model.main_head.weight[:,stop:], old_model.main_head.weight[:,stop:])
 
         for idx in range(master_user_model.n_aux_tasks):
-            assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
-            assert torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
-            assert torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+            if idx == task:
+                assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+                assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+                assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+            else:
+                assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+                assert torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+                assert torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
         
-        # Check that input weights and biases for the features induced by the task have been reset
+        # Check that input weights for the features induced by the task have been reset
         assert not torch.allclose(master_user_model.shared_layer[1].weight[start:stop,:], old_model.shared_layer[1].weight[start:stop,:])
         assert torch.allclose(master_user_model.shared_layer[1].weight[:start,:], old_model.shared_layer[1].weight[:start,:])
         assert torch.allclose(master_user_model.shared_layer[1].weight[stop:,:], old_model.shared_layer[1].weight[stop:,:])
 
-        #assert not torch.allclose(master_user_model.shared_layer[1].bias[start:stop], old_model.shared_layer[1].bias[start:stop])
-        #assert torch.allclose(master_user_model.shared_layer[1].bias[:start], old_model.shared_layer[1].bias[:start])
-        #assert torch.allclose(master_user_model.shared_layer[1].bias[stop:], old_model.shared_layer[1].bias[stop:])
+        # Check that no biases are reset
+        assert torch.allclose(master_user_model.shared_layer[1].bias, old_model.shared_layer[1].bias)
+        assert torch.allclose(master_user_model.main_head.bias, old_model.main_head.bias)
+        for i in range(master_user_model.n_aux_tasks):
+            assert torch.allclose(master_user_model.aux_heads[i].bias, old_model.aux_heads[i].bias)
 
 @pytest.mark.parametrize("tasks",[[0,1]])
-def test_MasterUserNetwork_reset_task_params_multiple(master_user_model, tasks):
+def test_MasterUserNetwork_reset_task_params_multiple(tasks):
+    master_user_model = MasterUserNetwork(
+        input_shape=(2,),
+        n_actions=2,
+        n_aux_tasks=3,
+        hidden_size=4,
+        activation='identity'
+    )
+    # Set all weights and biases to 1
+    with torch.no_grad():
+        master_user_model.shared_layer[1].weight.fill_(1.)
+        master_user_model.shared_layer[1].bias.fill_(1.)
+
+        master_user_model.main_head.weight[0].fill_(-1.)
+        master_user_model.main_head.weight[1].fill_(1.)
+        master_user_model.main_head.bias.fill_(1.)
+
+        for head in master_user_model.aux_heads:
+            head.weight.fill_(1.)
+            head.bias.fill_(1.)
     old_model = copy.deepcopy(master_user_model)
     master_user_model.reset_task_params(tasks)
-    start, stop = 2, 4
-    # For each output head, check that weights for the features induced by the task have been reset.
+    start, stop = 1, 3
+    # For each output head, check that weights for the features induced by the tasks have been reset.
     assert not torch.allclose(master_user_model.main_head.weight[:,start:stop], old_model.main_head.weight[:,start:stop])
     assert torch.allclose(master_user_model.main_head.weight[:,:start], old_model.main_head.weight[:,:start])
     assert torch.allclose(master_user_model.main_head.weight[:,stop:], old_model.main_head.weight[:,stop:])
 
     for idx in range(master_user_model.n_aux_tasks):
-        assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
-        assert torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
-        assert torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+        if idx in tasks:
+            assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+            assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+            assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
+        else:
+            assert not torch.allclose(master_user_model.aux_heads[idx].weight[:,start:stop], old_model.aux_heads[idx].weight[:,start:stop])
+            assert torch.allclose(master_user_model.aux_heads[idx].weight[:,:start], old_model.aux_heads[idx].weight[:,:start])
+            assert torch.allclose(master_user_model.aux_heads[idx].weight[:,stop:], old_model.aux_heads[idx].weight[:,stop:])
     
-    # Check that input weights and biases for the features induced by the task have been reset
+    # Check that input weights for the features induced by the tasks have been reset
     assert not torch.allclose(master_user_model.shared_layer[1].weight[start:stop,:], old_model.shared_layer[1].weight[start:stop,:])
     assert torch.allclose(master_user_model.shared_layer[1].weight[:start,:], old_model.shared_layer[1].weight[:start,:])
     assert torch.allclose(master_user_model.shared_layer[1].weight[stop:,:], old_model.shared_layer[1].weight[stop:,:])
 
-    #TODO Update when you know if biases should be reset for shared layer
-    #assert not torch.allclose(master_user_model.shared_layer[1].bias[start:stop], old_model.shared_layer[1].bias[start:stop])
-    #assert torch.allclose(master_user_model.shared_layer[1].bias[:start], old_model.shared_layer[1].bias[:start])
-    #assert torch.allclose(master_user_model.shared_layer[1].bias[stop:], old_model.shared_layer[1].bias[stop:])
+    # Check that no biases are reset
+    assert torch.allclose(master_user_model.shared_layer[1].bias, old_model.shared_layer[1].bias)
+    assert torch.allclose(master_user_model.main_head.bias, old_model.main_head.bias)
+    for i in range(master_user_model.n_aux_tasks):
+        assert torch.allclose(master_user_model.aux_heads[i].bias, old_model.aux_heads[i].bias)
 

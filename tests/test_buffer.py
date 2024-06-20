@@ -72,3 +72,18 @@ def test_sample(data):
     assert batch["terminateds"].shape == (5,), "Terminateds batch size mismatch."
     assert batch["truncateds"].shape == (5,), "Truncateds batch size mismatch."
     assert np.array_equal(batch["actions"], np.array([6, 3, 7, 4, 6]))
+
+def test_last_batch(data):
+    buffer = ReplayBuffer(seed=42)
+    for i in range(10):
+        act = i
+        buffer.insert(
+            data['obs'], 
+            act, 
+            data['rew'], 
+            data['next_obs'], 
+            data['terminated'], 
+            data['truncated'])
+    batch = buffer.sample(5)
+    assert np.array_equal(buffer.last_batch["actions"], np.array([6, 3, 7, 4, 6]))
+

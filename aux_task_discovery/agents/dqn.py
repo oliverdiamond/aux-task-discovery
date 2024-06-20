@@ -21,6 +21,8 @@ class DQNAgent(BaseAgent):
         n_actions: int,
         seed = 42,
         learning_rate = 0.01, 
+        adam_beta_1 = 0.9,
+        adam_beta_2 = 0.999,
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,
@@ -52,7 +54,7 @@ class DQNAgent(BaseAgent):
         self.learning_start = learning_start
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
         self._setup_model()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, betas=(0.0, 0.999))
+        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, betas=(adam_beta_1, adam_beta_2))
         self._update_target_network()
 
     def _update_target_network(self):

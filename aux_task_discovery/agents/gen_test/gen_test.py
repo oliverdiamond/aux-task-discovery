@@ -33,6 +33,8 @@ class GenTestAgent(DQNAgent):
         tester_tau = 0.05,
         seed = 42,
         learning_rate = 0.01, 
+        adam_beta_1 = 0.9,
+        adam_beta_2 = 0.999,
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,
@@ -57,6 +59,8 @@ class GenTestAgent(DQNAgent):
             n_actions=n_actions,
             seed=seed,
             learning_rate=learning_rate,
+            adam_beta_1=adam_beta_1,
+            adam_beta_2=adam_beta_2,
             epsilon=epsilon,
             epsilon_final=epsilon_final,
             anneal_epsilon=anneal_epsilon,
@@ -129,8 +133,8 @@ class GenTestAgent(DQNAgent):
         # Compute task ages and utils
         self.task_ages += 1
         if self.step_idx >= self.learning_start:
-            # Use most observations from most recent batch to compute task utils
-            self.task_utils = self.tester.eval_tasks(batch=self.replay_buffer.last_batch)
+            # Compute task utils
+            self.task_utils = self.tester.eval_tasks(batch=self.replay_buffer.last_batch, observation=obs)
         task_info = {}
         for i in range(self.n_aux_tasks):
             task_info[f'aux_{i}_age'] = self.task_ages[i]

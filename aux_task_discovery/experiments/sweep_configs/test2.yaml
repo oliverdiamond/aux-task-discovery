@@ -16,7 +16,7 @@ parameters:
   agent_args:
     parameters: 
       tester: 
-        value: 'trace'
+        value: 'batch_trace'
       generator: 
         value: 'onehot'
       epsilon:
@@ -25,6 +25,8 @@ parameters:
         value: 1
       learning_rate:
         values: [0.01, 0.0025]
+      adam_beta_1:
+        value: 0.0
       learning_start:
         value: 500
       hidden_size:
