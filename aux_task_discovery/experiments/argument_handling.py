@@ -17,7 +17,7 @@ def make_arg_parser():
                         help='Experiment random seed. Note that ')
     parser.add_argument('--env', 
                         type=str, 
-                        default='maze',
+                        default='fourrooms',
                         help='Gymnasium environment id')
     parser.add_argument('--agent', 
                         type=str, 
