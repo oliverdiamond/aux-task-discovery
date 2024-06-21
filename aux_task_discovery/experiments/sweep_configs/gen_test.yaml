@@ -1,4 +1,4 @@
-name: fourrooms_gentest
+name: fourrooms_gentest_lr_sweep
 method: grid
 parameters: 
   env:
@@ -10,13 +10,13 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [4,5] #[1,2,3,4,5,6,7,8,9,10]
+    values: [1,2,3,4,5,6,7,8,9,10]
   n_steps:
     value: 20000
   agent_args:
     parameters: 
       tester: 
-        value: 'trace'
+        value: 'batch_trace'
       generator: 
         value: 'onehot'
       epsilon:
@@ -24,9 +24,11 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        values: [0.01]
+        values: [0.000625, 0.0025, 0.01, 0.04]
+      adam_beta_1:
+        value: 0.0
       learning_start:
-        value: 1
+        value: 500
       hidden_size:
         value: 36
       buffer_size:
@@ -37,7 +39,7 @@ parameters:
         value: 100
       n_aux_tasks:
         value: 5
-      age_threshold: 
+      age_threshold:
         value: 0
       replace_ratio:
         value: 0.2
@@ -45,5 +47,3 @@ parameters:
         value: 500
       tester_tau:
         value: 0.05
-      
-      

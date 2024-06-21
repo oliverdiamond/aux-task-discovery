@@ -21,19 +21,21 @@ class DQNAgent(BaseAgent):
         n_actions: int,
         seed = 42,
         learning_rate = 0.01, 
+        adam_beta_1 = 0.9,
+        adam_beta_2 = 0.999,
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,
         n_anneal = 10000,
-        gamma = 0.9,
+        gamma = 1.0,
         n_hidden = 1, 
         hidden_size = 500,
         activation = 'tanh',
-        buffer_size = 1000,
+        buffer_size = 500,
         batch_size = 16,
         update_freq = 1,
         target_update_freq=100,
-        learning_start = 100
+        learning_start = 500
     ):
         super().__init__(seed=seed)
         self.input_shape = input_shape
@@ -52,7 +54,7 @@ class DQNAgent(BaseAgent):
         self.learning_start = learning_start
         self.replay_buffer = ReplayBuffer(capacity=buffer_size, seed=seed)
         self._setup_model()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate, betas=(adam_beta_1, adam_beta_2))
         self._update_target_network()
 
     def _update_target_network(self):
@@ -105,7 +107,7 @@ class DQNAgent(BaseAgent):
             self._update_target_network()
         return log_info
 
-    def get_losses(self, batch: dict):
+    def _get_losses(self, batch: dict):
         '''
         Computes squarred TD error for each transition in batch.
         '''
@@ -135,7 +137,7 @@ class DQNAgent(BaseAgent):
         '''
         self.model.train()
         batch = self.replay_buffer.sample(batch_size=self.batch_size)
-        losses = self.get_losses(batch)
+        losses = self._get_losses(batch)
         loss = losses.mean()
         loss_info = {'DQN_loss': loss.item()}
         self.optimizer.zero_grad()

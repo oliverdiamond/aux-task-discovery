@@ -1,4 +1,4 @@
-name: maze_gentest
+name: maze_gentest_lr_sweep
 method: grid
 parameters: 
   env:
@@ -10,13 +10,13 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [4,5,6] #[1,2,3,4,5,6,7,8,9,10]
+    values: [1,2,3,4,5,6,7,8,9,10]
   n_steps:
     value: 30000
   agent_args:
     parameters: 
       tester: 
-        value: 'trace'
+        value: 'batch_trace'
       generator: 
         value: 'onehot'
       epsilon:
@@ -24,9 +24,11 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        values: [0.001]
+        values: [0.00025, 0.001, 0.004]
+      adam_beta_1:
+        value: 0.0
       learning_start:
-        value: 1
+        value: 500
       hidden_size:
         value: 405
       buffer_size:

@@ -1,6 +1,20 @@
 import argparse
 def make_arg_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--use_gpu", 
+                        action="store_true",
+                        help='Wheather to use gpu for training')
+    parser.add_argument("--gpu_id", 
+                        default=0,
+                        help='ID of GPU to use for training if --use_gpu is set')
+    parser.add_argument('--n_steps', 
+                        type=int, 
+                        default=25000,
+                        help='Number of environment interactions to run before experiment terminates')
+    parser.add_argument('--seed', 
+                        type=int, 
+                        default=42,
+                        help='Experiment random seed. Note that ')
     parser.add_argument('--env', 
                         type=str, 
                         default='maze',
@@ -9,20 +23,6 @@ def make_arg_parser():
                         type=str, 
                         default='dqn',
                         help='Agent id, see ./aux_task_discovery/agents/__init__.py for agent registry')
-    parser.add_argument("--use_gpu", 
-                        action="store_true",
-                        help='Wheather to use gpu for training')
-    parser.add_argument("--gpu_id", 
-                        default=0,
-                        help='ID of GPU to use for training if --use_gpu is set')
-    parser.add_argument('--seed', 
-                        type=int, 
-                        default=42,
-                        help='Experiment random seed. Note that ')
-    parser.add_argument('--n_steps', 
-                        type=int, 
-                        default=25000,
-                        help='Number of environment interactions to run before experiment terminates')
     parser.add_argument('--agent_args', 
                         type=str, 
                         metavar='KEY=VALUE', 
