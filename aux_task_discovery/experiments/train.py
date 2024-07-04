@@ -17,7 +17,7 @@ def training_loop(args=None):
     wandb.init(project=WANDB_PROJECT, config=args)
     config = wandb.config
 
-    # Set expirement seed
+    # Set experiment seed
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     random.seed(config.seed)
@@ -42,7 +42,8 @@ def training_loop(args=None):
     episode_idx = 0
     episode_reward = 0
     episode_len = 0
-    for step_idx in tqdm.trange(config.n_steps, dynamic_ncols=True):
+    step_idx = 0
+    while step_idx < config.max_steps and episode_idx < config.max_episodes:
         # Get action from agent
         act = agent.get_action(obs)
         # Step env with agent action
@@ -62,6 +63,7 @@ def training_loop(args=None):
         })
         episode_reward += rew
         episode_len += 1
+        step_idx += 1
         obs = next_obs
 
         if terminated:
@@ -73,12 +75,15 @@ def training_loop(args=None):
                 'episode_reward': episode_reward,
                 'episode_len': episode_len,
             })
+            episode_idx += 1
+            # Print episode metrics
+            if episode_idx % 10 == 0:
+                print(f"Step: {step_idx}, Episode: {episode_idx}, Episode Reward: {episode_reward}, Episode Length: {episode_len}, Elapsed Runtime: {time.time() - wandb.run.start_time}")
+            # Reset episode metrics
             episode_len = 0
             episode_reward = 0
-            episode_idx += 1
-            
         
-        # Log metrics
+        # Log step and episode metrics
         wandb.log(step_log)
 
     wandb.finish()

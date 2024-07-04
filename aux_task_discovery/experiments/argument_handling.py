@@ -1,4 +1,5 @@
 import argparse
+
 def make_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--use_gpu", 
@@ -7,14 +8,18 @@ def make_arg_parser():
     parser.add_argument("--gpu_id", 
                         default=0,
                         help='ID of GPU to use for training if --use_gpu is set')
-    parser.add_argument('--n_steps', 
+    parser.add_argument('--max_steps', 
                         type=int, 
-                        default=25000,
-                        help='Number of environment interactions to run before experiment terminates')
+                        default=1000000000,
+                        help='Max number of environment interactions for the experiment. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
+    parser.add_argument('--max_episodes', 
+                        type=int, 
+                        default=1000000000,
+                        help='Max number of episodes for the experiment. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
     parser.add_argument('--seed', 
                         type=int, 
                         default=42,
-                        help='Experiment random seed. Note that ')
+                        help='Experiment random seed.')
     parser.add_argument('--env', 
                         type=str, 
                         default='fourrooms',

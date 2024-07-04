@@ -11,8 +11,10 @@ parameters:
     value: Null
   seed:
     values: [1,2,3,4,5,6,7,8,9,10]
-  n_steps:
-    value: 30000
+  max_episodes:
+    value: 200
+  max_steps:
+    value: 1000000000
   agent_args:
     parameters: 
       tester: 
