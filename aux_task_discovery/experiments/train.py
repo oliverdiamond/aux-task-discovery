@@ -17,7 +17,7 @@ def training_loop(args=None):
     wandb.init(project=WANDB_PROJECT, config=args)
     config = wandb.config
 
-    # Set expirement seed
+    # Set experiment seed
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     random.seed(config.seed)

@@ -11,11 +11,11 @@ def make_arg_parser():
     parser.add_argument('--max_steps', 
                         type=int, 
                         default=1000000000,
-                        help='Max number of environment interactions for the expirement. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
+                        help='Max number of environment interactions for the experiment. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
     parser.add_argument('--max_episodes', 
                         type=int, 
                         default=1000000000,
-                        help='Max number of episodes for the expirement. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
+                        help='Max number of episodes for the experiment. If both max_steps and max_episodes are specified, the experiment will end when either condition is met.')
     parser.add_argument('--seed', 
                         type=int, 
                         default=42,
