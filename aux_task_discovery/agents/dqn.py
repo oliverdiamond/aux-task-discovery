@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 import torch
 from torch import optim
+import gymnasium as gym
 
 from aux_task_discovery.utils import random_argmax
 import aux_task_discovery.utils.pytorch_utils as ptu
@@ -17,8 +18,7 @@ class DQNAgent(BaseAgent):
     '''
     def __init__(
         self,
-        input_shape: tuple,
-        n_actions: int,
+        env: gym.Env,
         seed = 42,
         learning_rate = 0.01, 
         adam_beta_1 = 0.9,
@@ -38,8 +38,9 @@ class DQNAgent(BaseAgent):
         learning_start = 500
     ):
         super().__init__(seed=seed)
-        self.input_shape = input_shape
-        self.n_actions = n_actions
+        self.env = env
+        self.input_shape = env.observation_space.shape
+        self.n_actions = env.action_space.n
         self.epsilon = epsilon
         self.epsilon_final = epsilon_final
         self.anneal_epsilon = anneal_epsilon

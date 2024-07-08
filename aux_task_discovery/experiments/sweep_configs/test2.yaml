@@ -12,7 +12,7 @@ parameters:
   seed:
     values: [4]
   max_episodes:
-    value: 20
+    value: 100
   max_steps:
     value: 1000000000
   agent_args:

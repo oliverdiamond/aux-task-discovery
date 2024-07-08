@@ -40,21 +40,24 @@ class GridWorldEnv(gym.Env):
         # Random generator for action noise
         self.noise_generator = np.random.RandomState(seed)
 
-    def _out_of_bounds(self, pos):
-        return not (-1<pos[0]<self.size and -1<pos[1]<self.size)
+    def reset(self, *, seed=None, options=None):
+        self.agent_pos = self.start_pos
+        obs = self._get_obs(pos=self.agent_pos)
+        return obs, {}
 
-    def _is_obstacle(self, pos):
-        return pos in self.obstacles
+    def step(self, action):
+        self.agent_pos = self._get_new_pos(self.agent_pos, action)
+        obs = self._get_obs(self.agent_pos)
+        rew = -1
+        terminated = self.agent_pos == self.goal_pos
+        truncated = False
+        return obs, rew, terminated, truncated, {}
 
     def _get_obs(self, pos):
         '''
-        Converts (x,y) pos to one-hot numpy array
+        Converts (x,y) pos to observation vector, which is a one-hot numpy array
         '''
-        assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
-        state_idx = pos[0]*self.size + pos[1]
-        obs = np.zeros(self.n_states, dtype=np.float32)
-        obs[state_idx] = 1
-        return obs
+        return self.pos_to_onehot(pos)
     
     def _get_new_pos(self, pos, action):
         if self.noise_generator.random() < self.action_noise:
@@ -69,20 +72,23 @@ class GridWorldEnv(gym.Env):
             # No change if action moves to obstacle or outside grid
             return pos
         return new_pos
-
-    def reset(self, *, seed=None, options=None):
-        self.agent_pos = self.start_pos
-        obs = self._get_obs(pos=self.agent_pos)
-        return obs, {}
-
-    def step(self, action):
-        self.agent_pos = self._get_new_pos(self.agent_pos, action)
-        obs = self._get_obs(self.agent_pos)
-        rew = -1
-        terminated = self.agent_pos == self.goal_pos
-        truncated = False
-        return obs, rew, terminated, truncated, {}
     
+    def pos_to_onehot(self, pos):
+        '''
+        Converts (x,y) pos to one-hot encoding
+        '''
+        assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
+        state_idx = pos[0]*self.size + pos[1]
+        obs = np.zeros(self.n_states, dtype=np.float32)
+        obs[state_idx] = 1
+        return obs
+
+    def _out_of_bounds(self, pos):
+        return not (-1<pos[0]<self.size and -1<pos[1]<self.size)
+
+    def _is_obstacle(self, pos):
+        return pos in self.obstacles
+
     def print_grid(self):
         '''
         Prints grid as string

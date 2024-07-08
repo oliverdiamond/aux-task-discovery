@@ -10,6 +10,7 @@ import gymnasium as gym
 import aux_task_discovery.utils.pytorch_utils as ptu
 from aux_task_discovery.utils.constants import WANDB_PROJECT
 from aux_task_discovery.agents import get_agent
+from aux_task_discovery.plots import plot_subgoals
 
 
 def training_loop(args=None):
@@ -31,11 +32,16 @@ def training_loop(args=None):
     
     # Make agent
     agent = get_agent(config.agent)(
-        input_shape=env.observation_space.shape,
-        n_actions=env.action_space.n,
+        env=env,
         seed=config.seed,
         **config.agent_args
         )
+    
+    # Log plot of initial subgoals if using gen_test agent and onehot generator
+    if config.agent == 'gen_test' and config.agent_args['generator'] == 'onehot':
+        subgoals = np.array([task.subgoal for task in agent.tasks])
+        fig = plot_subgoals(subgoals, agent.env)
+        wandb.log({'subgoals': wandb.Image(fig)})
 
     # Train loop
     obs, _ = env.reset()
@@ -85,7 +91,7 @@ def training_loop(args=None):
         
         # Log step and episode metrics
         wandb.log(step_log)
-
+    
     wandb.finish()
 
 
