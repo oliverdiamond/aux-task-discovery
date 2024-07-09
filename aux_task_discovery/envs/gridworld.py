@@ -14,10 +14,10 @@ class GridWorldEnv(gym.Env):
         # Size of square grid
         self.size = size
         # Starting location for each episode
-        assert not self._out_of_bounds(start_pos), 'Start pos must be in bounds'
+        assert not self.out_of_bounds(start_pos), 'Start pos must be in bounds'
         self.start_pos = start_pos
         # Goal location for each episode
-        assert not self._out_of_bounds(start_pos), 'Goal pos must be in bounds'
+        assert not self.out_of_bounds(start_pos), 'Goal pos must be in bounds'
         self.goal_pos = goal_pos
         # Current agent pos
         self.agent_pos = (None,None)
@@ -68,7 +68,7 @@ class GridWorldEnv(gym.Env):
         # Get change in coordinates
         delta_x, delta_y = self.action_deltas[action]
         new_pos = (pos[0]+delta_x, pos[1]+delta_y)
-        if self._out_of_bounds(new_pos) or self._is_obstacle(new_pos):
+        if self.out_of_bounds(new_pos) or self.is_obstacle(new_pos):
             # No change if action moves to obstacle or outside grid
             return pos
         return new_pos
@@ -77,16 +77,16 @@ class GridWorldEnv(gym.Env):
         '''
         Converts (x,y) pos to one-hot encoding
         '''
-        assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
+        assert not self.out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
         state_idx = pos[0]*self.size + pos[1]
         obs = np.zeros(self.n_states, dtype=np.float32)
         obs[state_idx] = 1
         return obs
 
-    def _out_of_bounds(self, pos):
+    def out_of_bounds(self, pos):
         return not (-1<pos[0]<self.size and -1<pos[1]<self.size)
 
-    def _is_obstacle(self, pos):
+    def is_obstacle(self, pos):
         return pos in self.obstacles
 
     def print_grid(self):

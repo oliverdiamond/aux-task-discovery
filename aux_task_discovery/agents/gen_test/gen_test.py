@@ -144,10 +144,10 @@ class GenTestAgent(DQNAgent):
 
         # Log aux task data
         for i in range(self.n_aux_tasks):
-            log_info[f'aux_{i}_age'] = self.task_ages[i]
-            log_info[f'aux_{i}_util'] = self.task_utils[i]
+            log_info[f'aux_{i+1}_age'] = self.task_ages[i]
+            log_info[f'aux_{i+1}_util'] = self.task_utils[i]
             if isinstance(self.generator, OneHotGenerator):
-                log_info[f'aux_{i}_subgoal'] = self.tasks[i].subgoal
+                log_info[f'aux_{i+1}_subgoal'] = self.tasks[i].subgoal
         
         return log_info
     

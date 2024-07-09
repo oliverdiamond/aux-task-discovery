@@ -36,10 +36,8 @@ class FourroomsCornerGenerator(Generator):
     Generates the two corner subgoal tasks for the fourrooms 
     environment from Gen + Test Paper
     '''
-    def __init__(self, input_shape=(2,), **kwargs):
-        self.dummy_env = FourRoomsEnv()
-        assert input_shape == self.dummy_env.observation_space.shape, 'Provided input shape does not match fourrroms env observation space'
-        self.input_shape = input_shape
+    def __init__(self, **kwargs):
+        self.input_shape = FourRoomsEnv().observation_space.shape
         self.tasks = None
 
     def generate_tasks(self, n_tasks=2) -> Sequence[GVF]:
@@ -60,10 +58,8 @@ class FourroomsHallwayGenerator(Generator):
     Generates the two corner subgoal tasks for the fourrooms 
     environment from Gen + Test Paper
     '''
-    def __init__(self, input_shape=2, **kwargs):
-        self.dummy_env = FourRoomsEnv()
-        assert input_shape == self.dummy_env.observation_space.shape, 'Provided input shape does not match fourrroms env observation space'
-        self.input_shape = input_shape
+    def __init__(self, **kwargs):
+        self.input_shape = FourRoomsEnv().observation_space.shape
         self.tasks = None
 
     def generate_tasks(self, n_tasks=2) -> Sequence[GVF]:
