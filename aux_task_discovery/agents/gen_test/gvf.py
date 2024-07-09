@@ -36,4 +36,13 @@ class GVF():
         
         return np.apply_along_axis(self._cumulant, 1, obs)
 
+class SubgoalGVF(GVF):
+    '''
+    Subgoal-reaching GVF. The cumulant is -1 at all states, and gamma is 0 at the subgoal state and 1 elsewhere.
+    '''
+    def __init__(self, subgoal: np.ndarray):
+        super().__init__(cumulant=lambda obs : -1, 
+                         gamma=lambda obs : int(not np.allclose(obs,subgoal)))
+        self.subgoal = subgoal
+
 

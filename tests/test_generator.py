@@ -89,7 +89,7 @@ def test_FourroomsCornerGenerator_cumulant(corner_obs, task_idx, corner_idx):
             (1, 1, 0),
         ]
 )
-def test_FourroomsCornerGenerator_cumulant(corner_obs, task_idx, corner_idx, expected):
+def test_FourroomsCornerGenerator_gamma(corner_obs, task_idx, corner_idx, expected):
     gvfs = FourroomsCornerGenerator((49,)).generate_tasks()
     assert gvfs[task_idx].gamma(corner_obs[corner_idx]) == expected
 
@@ -124,6 +124,6 @@ def test_FourroomsHallwayGenerator_cumulant(hallway_obs, task_idx, hallway_idx):
             (1, 1, 0),
         ]
 )
-def test_FourroomsCornerGenerator_gamma(hallway_obs, task_idx, hallway_idx, expected):
+def test_FourroomsHallwayGenerator_gamma(hallway_obs, task_idx, hallway_idx, expected):
     gvfs = FourroomsHallwayGenerator((49,)).generate_tasks()
     assert gvfs[task_idx].gamma(hallway_obs[hallway_idx]) == expected

@@ -14,10 +14,10 @@ class GridWorldEnv(gym.Env):
         # Size of square grid
         self.size = size
         # Starting location for each episode
-        assert not self._out_of_bounds(start_pos), 'Start pos must be in bounds'
+        assert not self.out_of_bounds(start_pos), 'Start pos must be in bounds'
         self.start_pos = start_pos
         # Goal location for each episode
-        assert not self._out_of_bounds(start_pos), 'Goal pos must be in bounds'
+        assert not self.out_of_bounds(start_pos), 'Goal pos must be in bounds'
         self.goal_pos = goal_pos
         # Current agent pos
         self.agent_pos = (None,None)
@@ -40,36 +40,6 @@ class GridWorldEnv(gym.Env):
         # Random generator for action noise
         self.noise_generator = np.random.RandomState(seed)
 
-    def _out_of_bounds(self, pos):
-        return not (-1<pos[0]<self.size and -1<pos[1]<self.size)
-
-    def _is_obstacle(self, pos):
-        return pos in self.obstacles
-
-    def _get_obs(self, pos):
-        '''
-        Converts (x,y) pos to one-hot numpy array
-        '''
-        assert not self._out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
-        state_idx = pos[0]*self.size + pos[1]
-        obs = np.zeros(self.n_states, dtype=np.float32)
-        obs[state_idx] = 1
-        return obs
-    
-    def _get_new_pos(self, pos, action):
-        if self.noise_generator.random() < self.action_noise:
-            # Choose random unselected action 
-            action_set = [0,1,2,3]
-            action_set.remove(action)
-            action = self.noise_generator.choice(action_set)
-        # Get change in coordinates
-        delta_x, delta_y = self.action_deltas[action]
-        new_pos = (pos[0]+delta_x, pos[1]+delta_y)
-        if self._out_of_bounds(new_pos) or self._is_obstacle(new_pos):
-            # No change if action moves to obstacle or outside grid
-            return pos
-        return new_pos
-
     def reset(self, *, seed=None, options=None):
         self.agent_pos = self.start_pos
         obs = self._get_obs(pos=self.agent_pos)
@@ -82,7 +52,43 @@ class GridWorldEnv(gym.Env):
         terminated = self.agent_pos == self.goal_pos
         truncated = False
         return obs, rew, terminated, truncated, {}
+
+    def _get_obs(self, pos):
+        '''
+        Converts (x,y) pos to observation vector, which is a one-hot numpy array
+        '''
+        return self.pos_to_onehot(pos)
     
+    def _get_new_pos(self, pos, action):
+        if self.noise_generator.random() < self.action_noise:
+            # Choose random unselected action 
+            action_set = [0,1,2,3]
+            action_set.remove(action)
+            action = self.noise_generator.choice(action_set)
+        # Get change in coordinates
+        delta_x, delta_y = self.action_deltas[action]
+        new_pos = (pos[0]+delta_x, pos[1]+delta_y)
+        if self.out_of_bounds(new_pos) or self.is_obstacle(new_pos):
+            # No change if action moves to obstacle or outside grid
+            return pos
+        return new_pos
+    
+    def pos_to_onehot(self, pos):
+        '''
+        Converts (x,y) pos to one-hot encoding
+        '''
+        assert not self.out_of_bounds(pos), 'Position must be in bounds to convert to one-hot'
+        state_idx = pos[0]*self.size + pos[1]
+        obs = np.zeros(self.n_states, dtype=np.float32)
+        obs[state_idx] = 1
+        return obs
+
+    def out_of_bounds(self, pos):
+        return not (-1<pos[0]<self.size and -1<pos[1]<self.size)
+
+    def is_obstacle(self, pos):
+        return pos in self.obstacles
+
     def print_grid(self):
         '''
         Prints grid as string
