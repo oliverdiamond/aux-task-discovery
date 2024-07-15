@@ -36,12 +36,6 @@ def training_loop(args=None):
         seed=config.seed,
         **config.agent_args
         )
-    
-    # Log plot of initial subgoals if using gen_test agent and onehot generator
-    if config.agent == 'gen_test' and config.agent_args['generator'] == 'onehot':
-        subgoals = np.array([task.subgoal for task in agent.tasks])
-        fig = plot_subgoals(subgoals, agent.env)
-        wandb.log({'subgoals': wandb.Image(fig)})
 
     # Train loop
     obs, _ = env.reset()

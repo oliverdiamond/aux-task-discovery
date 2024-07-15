@@ -20,7 +20,7 @@ parameters:
       tester: 
         value: 'batch_trace'
       generator: 
-        value: 'onehot'
+        value: 'grid_subgoal'
       epsilon:
         value: 0.1
       gamma:

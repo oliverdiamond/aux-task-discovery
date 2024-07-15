@@ -16,7 +16,7 @@ pip install -e .
 ```
 
 ## Running Experiments
-### To execute an individual run
+### To execute an individual run:
 
 ```
 python3 aux_task_discovery/experiments/run_experiment.py
