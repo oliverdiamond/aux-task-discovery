@@ -11,7 +11,7 @@ from aux_task_discovery.utils import random_argmax
 import aux_task_discovery.utils.pytorch_utils as ptu
 from aux_task_discovery.agents.dqn import DQNAgent
 from aux_task_discovery.models import MasterUserNetwork
-from aux_task_discovery.agents.gen_test.generators import get_generator, OneHotGenerator
+from aux_task_discovery.agents.gen_test.generators import get_generator, GridSubgoalGenerator
 from aux_task_discovery.agents.gen_test.testers import get_tester
 from aux_task_discovery.plots import plot_subgoals
 
@@ -146,9 +146,16 @@ class GenTestAgent(DQNAgent):
         for i in range(self.n_aux_tasks):
             log_info[f'aux_{i+1}_age'] = self.task_ages[i]
             log_info[f'aux_{i+1}_util'] = self.task_utils[i]
-            if isinstance(self.generator, OneHotGenerator):
+            if isinstance(self.generator, GridSubgoalGenerator):
                 log_info[f'aux_{i+1}_subgoal'] = self.tasks[i].subgoal
         
+        if self.step_idx==1:
+            # Log plot of initial subgoals
+            if isinstance(self.generator, GridSubgoalGenerator):
+                subgoals = np.array([task.subgoal for task in self.tasks])
+                fig = plot_subgoals(subgoals, self.env)
+                log_info['subgoals'] = wandb.Image(fig)
+
         return log_info
     
     def _update_tasks(self):
@@ -169,7 +176,7 @@ class GenTestAgent(DQNAgent):
                 curr_tasks.sort(key=lambda x : x[0])
                 idxs = [x[1] for x in curr_tasks[:self.n_replace]]
                 # Replace with new tasks
-                new_tasks = self.generator.generate_tasks(len(idxs))
+                new_tasks = self.generator.generate_tasks(len(idxs), curr_tasks=self.tasks)
                 self.tasks[idxs] = new_tasks
                 # Reset input and output weights and of features induced by the replaced tasks
                 self.model.reset_task_params(idxs)
@@ -179,7 +186,7 @@ class GenTestAgent(DQNAgent):
                 # Set ages to 0 for new tasks
                 self.task_ages[idxs] = 0
                 # Log subgoal plot
-                if isinstance(self.generator, OneHotGenerator):
+                if isinstance(self.generator, GridSubgoalGenerator):
                     subgoals = np.array([task.subgoal for task in self.tasks])
                     fig = plot_subgoals(subgoals, self.env)
                     info['subgoals'] = wandb.Image(fig)

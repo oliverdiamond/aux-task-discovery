@@ -1,9 +1,10 @@
 from typing import Sequence
 
+
 import numpy as np
 
 from aux_task_discovery.agents.gen_test.gvf import GVF, SubgoalGVF
-from aux_task_discovery.envs import FourRoomsEnv
+from aux_task_discovery.envs import FourRoomsEnv, GridWorldEnv
 
 class Generator():
     def __init__(self, seed, **kwargs):
@@ -12,24 +13,34 @@ class Generator():
     def generate_tasks(self, n_tasks) -> Sequence[GVF]:
         raise NotImplementedError()
 
-class OneHotGenerator(Generator):
+class GridSubgoalGenerator(Generator):
     '''
-    Generates subgoal-reaching GVFs for one-hot encoded states.
+    Generates subgoal-reaching GVFs for a gridworld env.
     Gamma is 0 for subgoal and 1 for all other states.
     Cumulant is -1 for all states. 
     '''
-    def __init__(self, env, seed=42, **kwargs):
+    def __init__(self, env: GridWorldEnv, seed=42, **kwargs):
         super().__init__(seed=seed)
-        self.input_size = np.prod(env.observation_space.shape)
+        self.env = env
+        self.obstacle_idxs = [np.argmax(env.unwrapped.pos_to_onehot(ob)) for ob in env.unwrapped.obstacles]
 
-    def generate_task(self):
-        idx = self.rand_gen.randint(self.input_size)
-        subgoal = np.zeros(self.input_size, dtype=np.float32)
-        subgoal[idx] = 1
-        return SubgoalGVF(subgoal)
-    
-    def generate_tasks(self, n_tasks) -> Sequence[GVF]:
-        return [self.generate_task() for _ in range(n_tasks)]
+    def generate_tasks(self, n_tasks, curr_tasks = None):
+        '''
+        Generates n_tasks subgoal-reaching GVFs for the gridworld environment.
+        Subgoals are randomly selected without replacement from all valid states 
+        (exludes env obstacles and subgoals for an optionally provided list of current tasks).
+        '''
+        # Create list of idxs for one-hot state encoding to exclude from subgoal selection
+        exempt_subgoals = self.obstacle_idxs.copy()
+        if curr_tasks is not None:
+            exempt_subgoals += [np.argmax(task.subgoal) for task in curr_tasks]
+        # Randomly select n_tasks valid subgoals
+        valid_subgoals = np.setdiff1d(np.arange(self.env.unwrapped.n_states), exempt_subgoals)
+        new_subgoal_idxs = np.random.choice(valid_subgoals, n_tasks, replace=False)
+        # Create one-hot vectors for new subgoals
+        new_subgoals = np.zeros((n_tasks, self.env.unwrapped.observation_space.shape[0]), dtype=np.float32)
+        new_subgoals[np.arange(n_tasks), new_subgoal_idxs] = 1
+        return [SubgoalGVF(subgoal) for subgoal in new_subgoals]
 
 class FourroomsCornerGenerator(Generator):
     '''
@@ -80,7 +91,7 @@ class FeatureAttainGenerator(Generator):
     pass
 
 GENERATOR_REG = {
-    'onehot': OneHotGenerator,
+    'grid_subgoal': GridSubgoalGenerator,
     'feature': FeatureAttainGenerator,
     'fourrooms_corner': FourroomsCornerGenerator,
     'fourrooms_hallway': FourroomsHallwayGenerator,

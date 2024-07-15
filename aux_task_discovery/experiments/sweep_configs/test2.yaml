@@ -10,9 +10,9 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [10]
+    values: [1]
   max_episodes:
-    value: 10
+    value: 5
   max_steps:
     value: 1000000000
   agent_args:
@@ -20,7 +20,7 @@ parameters:
       tester: 
         value: 'batch_trace'
       generator: 
-        value: 'onehot'
+        value: 'grid_subgoal'
       epsilon:
         value: 0.1
       gamma:
