@@ -1,4 +1,4 @@
-name: subgoal_plot_test
+name: subgoal_frequency_test
 method: grid
 parameters: 
   env:
@@ -10,9 +10,9 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [1]
+    values: [1,2,3,4,5]
   max_episodes:
-    value: 5
+    value: 200
   max_steps:
     value: 1000000000
   agent_args:
