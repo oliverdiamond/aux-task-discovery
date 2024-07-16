@@ -34,4 +34,4 @@ Note that arguments for the agent constructor are all specified as strings with 
 python3 aux_task_discovery/experiments/run_sweep.py --sweep_config='name_of_your_yaml_config'
 ```
 
-All non-default arguments should be specified in a .yaml file stored at **./aux_task_discovery/experiments/sweep_configs** with the format as shown [here](./aux_task_discovery/experiments/sweep_configs/dqn.yaml)
+All non-default arguments should be specified in a .yaml file stored at **./aux_task_discovery/experiments/sweep_configs/** with the format as shown [here](./aux_task_discovery/experiments/sweep_configs/dqn.yaml)
