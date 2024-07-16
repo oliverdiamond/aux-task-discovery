@@ -20,8 +20,9 @@ class Tester():
 
 class TraceTester(Tester):
     '''
-    Proposed tester from Gen+Test Paper. Uses traces of induced features and magnitude 
-    of induced feature weights on the main task to evaluate auxillery task utility.
+    TraceTester uses traces of induced features (calculated using the observation 
+    from the current timestep) and magnitude of induced feature weights on the main 
+    task to evaluate auxillery task utility.
     '''
     def __init__(self, model: MasterUserNetwork, tau = 0.05, **kwargs):
         self.model = model
@@ -71,8 +72,10 @@ class TraceTester(Tester):
 
 class BatchTraceTester(Tester):
     '''
-    Proposed tester from Gen+Test Paper. Uses traces of induced features and magnitude 
-    of induced feature weights on the main task to evaluate auxillery task utility.
+    Tester used in the Gen+Test Paper. Uses traces of induced features (calculated 
+    by maintaining a separate trace for each observation in the batch sampled from the 
+    replay buffer and then averaging them) and magnitude of induced feature weights on 
+    the main task to evaluate auxillery task utility.
     '''
     def __init__(self, model: MasterUserNetwork, tau = 0.05, **kwargs):
         self.model = model
