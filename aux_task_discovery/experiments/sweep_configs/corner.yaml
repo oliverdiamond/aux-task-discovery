@@ -1,4 +1,4 @@
-name: fourrooms_corner
+name: fourrooms_corner_lr_sweep
 method: grid
 parameters: 
   env:
@@ -10,7 +10,7 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [4,5,6] #[1,2,3,4,5,6,7,8,9,10]
+    values: [1,2,3,4,5,6,7,8,9,10]
   max_episodes:
     value: 200
   max_steps:
@@ -26,7 +26,7 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        values: [0.01]
+        values: [0.000625, 0.0025, 0.01, 0.04]
       learning_start:
         value: 500
       hidden_size:
