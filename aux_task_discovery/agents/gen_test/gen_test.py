@@ -147,7 +147,7 @@ class GenTestAgent(DQNAgent):
             log_info[f'aux_{i+1}_age'] = self.task_ages[i]
             log_info[f'aux_{i+1}_util'] = self.task_utils[i]
             if isinstance(self.generator, GridSubgoalGenerator):
-                log_info[f'aux_{i+1}_subgoal'] = self.tasks[i].subgoal
+                log_info[f'aux_{i+1}_subgoal'] = np.argmax(self.tasks[i].subgoal)
         
         if self.step_idx==1:
             # Log plot of initial subgoals
@@ -245,7 +245,7 @@ class GenTestAgent(DQNAgent):
         for i in range(self.n_aux_tasks):
             aux_loss = losses[i].mean()
             loss += aux_loss
-            loss_info[f'aux_{i}_loss'] = aux_loss.item()
+            loss_info[f'aux_{i+1}_loss'] = aux_loss.item()
         loss_info['total_loss'] = loss.item()
         self.optimizer.zero_grad()
         loss.backward()

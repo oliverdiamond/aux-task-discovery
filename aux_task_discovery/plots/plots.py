@@ -15,11 +15,11 @@ def plot_subgoals(subgoals: np.array, gridworld_env: GridWorldEnv):
     for i in range(len(subgoals)):
         # Find the index of the non-zero element
         non_zero_index = np.argmax(subgoals[i])
-        # Set the non-zero element to the 
+        # Set the non-zero element to the id for the aux task
         subgoals[i][non_zero_index] = i+1
-
-    subgoals = subgoals.sum(axis=0).reshape(gridworld_env.unwrapped.size, gridworld_env.unwrapped.size) # 1 if cell is a subgoal else 0
+    
     dim = gridworld_env.unwrapped.size
+    subgoals = subgoals.sum(axis=0).reshape(dim, dim) # 1 if cell is a subgoal else 0
     fig, ax = plt.subplots(dpi=300)
     for i in range(dim+2):
         for j in range(dim+2):
@@ -60,6 +60,7 @@ def plot_subgoals(subgoals: np.array, gridworld_env: GridWorldEnv):
     plt.close()
 
     return fig
+
 
 #---------------TESTS---------------#
 
