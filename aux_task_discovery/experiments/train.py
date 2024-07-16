@@ -10,8 +10,6 @@ import gymnasium as gym
 import aux_task_discovery.utils.pytorch_utils as ptu
 from aux_task_discovery.utils.constants import WANDB_PROJECT
 from aux_task_discovery.agents import get_agent
-from aux_task_discovery.plots import plot_subgoals
-
 
 def training_loop(args=None):
     # Start W&B run
