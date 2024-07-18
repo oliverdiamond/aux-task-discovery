@@ -2,9 +2,7 @@ import argparse
 import os
 import json
 
-import numpy as np
 import wandb
-import gymnasium as gym
 import pandas as pd
 
 from aux_task_discovery.utils.constants import WANDB_PROJECT, WANDB_ENTITY
