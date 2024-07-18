@@ -1,8 +1,8 @@
-name: maze_gentest_lr_sweep
+name: fourrooms_gentest_30_seeds_replace_cycle=1000_lr=0.0025
 method: grid
 parameters: 
   env:
-    value: 'maze'
+    value: 'fourrooms'
   agent:
     value: 'gentest'
   use_gpu:
@@ -10,7 +10,7 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [1,2,3,4,5,6,7,8,9,10]
+    values: [11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]
   max_episodes:
     value: 200
   max_steps:
@@ -26,27 +26,26 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        values: [0.00025, 0.001, 0.004]
+        value: 0.0025
       adam_beta_1:
         value: 0.0
       learning_start:
         value: 500
       hidden_size:
-        value: 405
+        value: 36
       buffer_size:
-        value: 1000
+        value: 500
       batch_size: 
         value: 16
       target_update_freq:
         value: 100
       n_aux_tasks:
         value: 5
-      age_threshold: 
+      age_threshold:
         value: 0
       replace_ratio:
-        value: 0.2
+        value: 0.1
       replace_cycle:
-        value: 500
+        value: 1000
       tester_tau:
         value: 0.05
-

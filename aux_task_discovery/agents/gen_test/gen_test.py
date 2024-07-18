@@ -1,9 +1,8 @@
-import copy
 from typing import Union
+import math
 
 import numpy as np
 import torch
-from torch import optim
 import gymnasium as gym
 import wandb
 
@@ -53,7 +52,7 @@ class GenTestAgent(DQNAgent):
         self.n_aux_tasks = n_aux_tasks
         self.age_threshold = age_threshold
         self.replace_cycle = replace_cycle
-        self.n_replace = round(n_aux_tasks * replace_ratio)
+        self.n_replace = math.ceil(n_aux_tasks * replace_ratio)
         self.task_ages = np.zeros(n_aux_tasks)
         self.task_utils = np.zeros(n_aux_tasks)
         super().__init__(
