@@ -11,7 +11,7 @@ from aux_task_discovery.experiments.train import training_loop
 def main():
     # Parse Args
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sweep_config", type=str, required=True)
+    parser.add_argument("--config", type=str, required=True)
     args = parser.parse_args()
     
     # Load sweep config from name of specified yaml file
