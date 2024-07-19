@@ -48,6 +48,7 @@ class GenTestAgent(DQNAgent):
         update_freq = 1,
         target_update_freq=100,
         learning_start = 500,
+        **kwargs
     ):
         self.n_aux_tasks = n_aux_tasks
         self.age_threshold = age_threshold
@@ -74,6 +75,7 @@ class GenTestAgent(DQNAgent):
             update_freq=update_freq,
             target_update_freq=target_update_freq,
             learning_start=learning_start,
+            **kwargs
             )
         self.generator = get_generator(generator)(
             env=env,

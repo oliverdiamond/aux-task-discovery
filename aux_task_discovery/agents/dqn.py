@@ -35,7 +35,8 @@ class DQNAgent(BaseAgent):
         batch_size = 16,
         update_freq = 1,
         target_update_freq=100,
-        learning_start = 500
+        learning_start = 500,
+        **kwargs
     ):
         super().__init__(seed=seed)
         self.env = env
