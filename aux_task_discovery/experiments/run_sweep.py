@@ -15,7 +15,7 @@ def main():
     args = parser.parse_args()
     
     # Load sweep config from name of specified yaml file
-    path = os.path.dirname(os.path.abspath(__file__)) + '/sweep_configs/' + args.sweep_config + '.yaml'
+    path = os.path.dirname(os.path.abspath(__file__)) + '/sweep_configs/' + args.config + '.yaml'
     sweep_config = load_yaml_config(path)
 
     # Start sweep
