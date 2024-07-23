@@ -1,18 +1,20 @@
-name: line_plot_test
+name: fourrooms_gentest_lr=0.0025_replace_cycle=1000
 method: grid
 parameters: 
   env:
     value: 'fourrooms'
   agent:
-    values: ['dqn','gentest']
+    value: 'gentest'
+  normalize_input:
+    value: True
   use_gpu:
     value: False
   gpu_id:
     value: Null
   seed:
-    values: [1,2,3,4]
+    values: [11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]
   max_episodes:
-    value: 100
+    value: 200
   max_steps:
     value: 1000000000
   agent_args:
@@ -26,7 +28,7 @@ parameters:
       gamma:
         value: 1
       learning_rate:
-        value: 0.01
+        value: 0.0025
       adam_beta_1:
         value: 0.0
       learning_start:
@@ -46,6 +48,6 @@ parameters:
       replace_ratio:
         value: 0.1
       replace_cycle:
-        value: 1000
+        value: 500
       tester_tau:
         value: 0.05

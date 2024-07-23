@@ -28,11 +28,17 @@ def training_loop(args=None):
     env = gym.make(config.env, seed=config.seed)
     assert isinstance(env.action_space, gym.spaces.Discrete), 'DQN requires discrete action space'
     
+    agent_args = config.agent_args.copy()
+    # If normalizing input, get low and high bounds for observation space
+    if config.normalize_input:
+        assert isinstance(env.observation_space, gym.spaces.Box), 'Normalizing input currently only supports Box observation space'
+        agent_args['obs_bound'] = (env.observation_space.low[0], env.observation_space.high[0])
+    
     # Make agent
     agent = get_agent(config.agent)(
         env=env,
         seed=config.seed,
-        **config.agent_args
+        **agent_args
         )
 
     # Train loop

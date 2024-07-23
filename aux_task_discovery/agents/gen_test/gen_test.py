@@ -27,6 +27,7 @@ class GenTestAgent(DQNAgent):
         env: gym.Env,
         generator: str,
         tester: str,
+        obs_bound = None,
         n_aux_tasks = 5,
         age_threshold = 0,
         replace_cycle = 500,
@@ -58,6 +59,7 @@ class GenTestAgent(DQNAgent):
         self.task_utils = np.zeros(n_aux_tasks)
         super().__init__(
             env=env,
+            obs_bound=obs_bound,
             seed=seed,
             learning_rate=learning_rate,
             adam_beta_1=adam_beta_1,
@@ -95,6 +97,7 @@ class GenTestAgent(DQNAgent):
                 n_aux_tasks=self.n_aux_tasks,
                 hidden_size=self.hidden_size,
                 activation=self.activation,
+                obs_bound=self.obs_bound
                 )
 
     @torch.no_grad()
@@ -179,7 +182,7 @@ class GenTestAgent(DQNAgent):
                 # Replace with new tasks
                 new_tasks = self.generator.generate_tasks(len(idxs), curr_tasks=self.tasks)
                 self.tasks[idxs] = new_tasks
-                # Reset input and output weights and of features induced by the replaced tasks
+                # Reset input and output weights of features induced by the replaced tasks
                 self.model.reset_task_params(idxs)
                 # Reset tester as needed for replaced tasks. If tester uses a trace, 
                 # will reset traces for features induced by replaced tasks

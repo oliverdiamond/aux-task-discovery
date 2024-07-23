@@ -5,6 +5,8 @@ parameters:
     value: 'fourrooms'
   agent:
     value: 'dqn'
+  normalize_input:
+    value: True
   use_gpu:
     value: False
   gpu_id:

@@ -24,14 +24,19 @@ class ActionValueNetwork(nn.Module):
         self, 
         input_shape: tuple,
         n_actions: int,
+        obs_bound = None,
         n_hidden = 1, 
         hidden_size = 500,
         activation = 'tanh',
     ):
         super().__init__()
+        self.obs_bound = obs_bound
         # Build MLP
         activation = _str_to_activation[activation]
         layers = []
+        # Normalize input if bounds are provided
+        if obs_bound is not None:
+            layers.append(MinMaxNormalization(feature_min=obs_bound[0], feature_max=obs_bound[1]))
         # Flatten obs to 1d tensor
         layers.append(nn.Flatten())
         # Add hidden layers
@@ -73,12 +78,14 @@ class MasterUserNetwork(nn.Module):
         self, 
         input_shape: tuple,
         n_actions: int,
+        obs_bound = None,
         n_aux_tasks = 5, 
         hidden_size = 500,
         activation = 'tanh',
     ):
         super().__init__()
         assert hidden_size >= n_aux_tasks+1, 'Hidden layer size must be >= n_aux_tasks+1'
+        self.obs_bound = obs_bound
         self.hidden_size = hidden_size
         self.n_aux_tasks = n_aux_tasks
         self.n_heads = n_aux_tasks + 1 # Includes head for main task
@@ -87,12 +94,18 @@ class MasterUserNetwork(nn.Module):
             print('Master-User hidden layer size not divisable by number of output heads. Extra hidden features will be delegated to the main task.')
         activation = _str_to_activation[activation]
         in_size = np.prod(input_shape)
+        if self.obs_bound is not None:
+            self.processing_layer = nn.Sequential(
+                nn.Flatten(),
+                MinMaxNormalization(feature_min=self.obs_bound[0], feature_max=self.obs_bound[1]),
+                ).to(ptu.device)
+        else:
+            self.processing_layer = nn.Flatten().to(ptu.device)
         # Build shared representation
         self.shared_layer = nn.Sequential(
-                                nn.Flatten(),
-                                nn.Linear(in_size, hidden_size),
-                                activation,
-                            ).to(ptu.device)
+            nn.Linear(in_size, hidden_size),
+            activation,
+            ).to(ptu.device)
         # Build output heads
         aux_heads = []
         self.feature_ranges = {} # Tracks start and stop idxs for shared features induced by each task
@@ -127,6 +140,7 @@ class MasterUserNetwork(nn.Module):
         Returns dictionary with head IDs as keys and their respective outputs as values. \n
         ID for the main task is 'main'. IDs for aux tasks are their indicies in MasterUserNetwork.aux_heads. \n
         '''
+        obs = self.processing_layer(obs)
         shared_features = self.shared_layer(obs)
         outputs = {idx : head(shared_features) for idx, head in enumerate(self.aux_heads)}
         outputs['main'] = self.main_head(shared_features)
@@ -137,8 +151,8 @@ class MasterUserNetwork(nn.Module):
         '''
         Initialize all network weights using Xavier uniform initialization and all biases to 0
         '''
-        init.xavier_uniform_(self.shared_layer[1].weight)
-        init.zeros_(self.shared_layer[1].bias)
+        init.xavier_uniform_(self.shared_layer[0].weight)
+        init.zeros_(self.shared_layer[0].bias)
         init.xavier_uniform_(self.main_head.weight)
         init.zeros_(self.main_head.bias)
         for i in np.arange(self.n_aux_tasks):
@@ -151,6 +165,7 @@ class MasterUserNetwork(nn.Module):
         Get features produced by the hidden layer which are shared across all task heads 
         for a given observation
         '''
+        obs = self.processing_layer(obs)
         shared_features = self.shared_layer(obs)
         return shared_features
 
@@ -164,7 +179,7 @@ class MasterUserNetwork(nn.Module):
             # Get feature indicies for the task
             start, stop = self.feature_ranges[task_idx]
             # Reset input weights for shared features induced by the task
-            init.xavier_uniform_(self.shared_layer[1].weight[start:stop,:])
+            init.xavier_uniform_(self.shared_layer[0].weight[start:stop,:])
             # Reset output weights on the main task head for features induced by the task 
             init.xavier_uniform_(self.main_head.weight[:,start:stop])
             # Reset output weights on aux task heads for features induced by the task 
@@ -173,3 +188,18 @@ class MasterUserNetwork(nn.Module):
                     init.xavier_uniform_(self.aux_heads[i].weight)
                 else:
                     init.xavier_uniform_(self.aux_heads[i].weight[:,start:stop])
+
+class MinMaxNormalization(nn.Module):
+    def __init__(self, feature_min=0, feature_max=1, scaled_min=-1.0, scaled_max=1.0):
+        super(MinMaxNormalization, self).__init__()
+        self.feature_min = feature_min
+        self.feature_max = feature_max
+        self.scaled_min = scaled_min
+        self.scaled_max = scaled_max
+
+    def forward(self, x):
+        # Apply min-max normalization
+        x_normalized = (x - self.feature_min) / (self.feature_max - self.feature_min)
+        # Scale to the desired range [min_val, max_val]
+        x_scaled = x_normalized * (self.scaled_max - self.scaled_min) + self.scaled_min
+        return x_scaled

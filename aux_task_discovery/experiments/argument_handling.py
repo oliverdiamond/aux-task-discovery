@@ -24,6 +24,9 @@ def make_arg_parser():
                         type=str, 
                         default='fourrooms',
                         help='Gymnasium environment id')
+    parser.add_argument("--normalize_input", 
+                        action="store_true",
+                        help='Wheather to apply min-max normalization to input observations')
     parser.add_argument('--agent', 
                         type=str, 
                         default='dqn',

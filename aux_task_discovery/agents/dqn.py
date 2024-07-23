@@ -19,6 +19,7 @@ class DQNAgent(BaseAgent):
     def __init__(
         self,
         env: gym.Env,
+        obs_bound = None,
         seed = 42,
         learning_rate = 0.01, 
         adam_beta_1 = 0.9,
@@ -40,6 +41,7 @@ class DQNAgent(BaseAgent):
     ):
         super().__init__(seed=seed)
         self.env = env
+        self.obs_bound = obs_bound
         self.input_shape = env.observation_space.shape
         self.n_actions = env.action_space.n
         self.epsilon = epsilon
@@ -69,6 +71,7 @@ class DQNAgent(BaseAgent):
                 n_hidden=self.n_hidden,
                 hidden_size=self.hidden_size,
                 activation=self.activation,
+                obs_bound = self.obs_bound
                 )
 
     @torch.no_grad()
