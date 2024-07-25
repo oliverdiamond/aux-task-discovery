@@ -35,8 +35,8 @@ class GenTestAgent(DQNAgent):
         tester_tau = 0.05,
         seed = 42,
         learning_rate = 0.01, 
-        adam_beta_1 = 0.9,
-        adam_beta_2 = 0.999,
+        adam_beta_1 = 0.0,
+        adam_beta_2 = 0.99,
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,
@@ -226,6 +226,7 @@ class GenTestAgent(DQNAgent):
         for i, task in enumerate(self.tasks):
             preds = preds_all[i][torch.arange(obs.shape[0]), ptu.from_numpy(act)]
             next_qs = next_q_all[i].max(dim=-1)[0].detach()
+            next_qs[terminated & ~truncated] = 0
             gammas = ptu.from_numpy(task.gamma(next_obs))
             cumulants = ptu.from_numpy(task.cumulant(next_obs))
             targets =  cumulants + (gammas * next_qs)

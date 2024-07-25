@@ -1,4 +1,4 @@
-name: fourrooms_gentest_lr=0.0025_replace_cycle=1000
+name: fourrooms_gentest_track_model_params
 method: grid
 parameters: 
   env:
@@ -12,7 +12,7 @@ parameters:
   gpu_id:
     value: Null
   seed:
-    values: [11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]
+    values: [1,2,3,4,5]
   max_episodes:
     value: 200
   max_steps:

@@ -23,7 +23,7 @@ class DQNAgent(BaseAgent):
         seed = 42,
         learning_rate = 0.01, 
         adam_beta_1 = 0.9,
-        adam_beta_2 = 0.999,
+        adam_beta_2 = 0.99,
         epsilon = 0.1,
         epsilon_final = 0.1,
         anneal_epsilon = False,

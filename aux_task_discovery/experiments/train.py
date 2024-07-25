@@ -40,6 +40,9 @@ def training_loop(args=None):
         seed=config.seed,
         **agent_args
         )
+    
+    # Track model parameters and gradients
+    wandb.watch(agent.model, log='all')
 
     # Train loop
     obs, _ = env.reset()
@@ -48,6 +51,9 @@ def training_loop(args=None):
     episode_len = 0
     step_idx = 0
     while step_idx < config.max_steps and episode_idx < config.max_episodes:
+        # Start episode timer
+        if episode_len == 0:
+            episode_start_time = time.time()
         # Get action from agent
         act = agent.get_action(obs)
         # Step env with agent action
@@ -81,8 +87,8 @@ def training_loop(args=None):
             })
             episode_idx += 1
             # Print episode metrics
-            if episode_idx % 10 == 0:
-                print(f"Step: {step_idx}, Episode: {episode_idx}, Episode Reward: {episode_reward}, Episode Length: {episode_len}, Elapsed Runtime: {time.time() - wandb.run.start_time}")
+            if episode_idx <= 10 or episode_idx % 10 == 0:
+                print(f"Step: {step_idx}, Episode: {episode_idx}, Episode Reward: {episode_reward}, Episode Length: {episode_len}, Episode Runtime: {time.time() - episode_start_time}")
             # Reset episode metrics
             episode_len = 0
             episode_reward = 0

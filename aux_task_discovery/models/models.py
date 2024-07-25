@@ -94,6 +94,7 @@ class MasterUserNetwork(nn.Module):
             print('Master-User hidden layer size not divisable by number of output heads. Extra hidden features will be delegated to the main task.')
         activation = _str_to_activation[activation]
         in_size = np.prod(input_shape)
+        # Flatten and normalize input
         if self.obs_bound is not None:
             self.processing_layer = nn.Sequential(
                 nn.Flatten(),
