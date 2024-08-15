@@ -36,7 +36,7 @@ class GridSubgoalGenerator(Generator):
             exempt_subgoals += [np.argmax(task.subgoal) for task in curr_tasks]
         # Randomly select n_tasks valid subgoals
         valid_subgoals = np.setdiff1d(np.arange(self.env.unwrapped.n_states), exempt_subgoals)
-        new_subgoal_idxs = np.random.choice(valid_subgoals, n_tasks, replace=False)
+        new_subgoal_idxs = self.rand_gen.choice(valid_subgoals, n_tasks, replace=False)
         # Create one-hot vectors for new subgoals
         new_subgoals = np.zeros((n_tasks, self.env.unwrapped.observation_space.shape[0]), dtype=np.float32)
         new_subgoals[np.arange(n_tasks), new_subgoal_idxs] = 1
