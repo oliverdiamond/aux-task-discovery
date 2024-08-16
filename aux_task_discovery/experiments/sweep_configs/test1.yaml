@@ -1,0 +1,35 @@
+name: fourrooms_dqn_test
+method: grid
+parameters: 
+  env:
+    value: 'fourrooms'
+  agent:
+    value: 'dqn'
+  normalize_input:
+    value: True
+  use_gpu:
+    value: False
+  gpu_id:
+    value: Null
+  seed:
+    values: [1,2,3,4,5,6,7,8,9,10]
+  max_episodes:
+    value: 200
+  max_steps:
+    value: 1000000000
+  agent_args:
+    parameters: 
+      gamma:
+        value: 1
+      learning_rate:
+        values: [0.04, 0.000625]
+      hidden_size:
+        value: 50
+      buffer_size:
+        value: 500
+      batch_size: 
+        value: 16
+      target_update_freq:
+        value: 100
+      learning_start:
+        value: 500

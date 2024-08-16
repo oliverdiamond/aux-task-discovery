@@ -1,6 +1,5 @@
 #!/bin/bash
 
-python3 aux_task_discovery/experiments/run_sweep.py --sweep_config gen_test
-python3 aux_task_discovery/experiments/run_sweep.py --sweep_config dqn
-python3 aux_task_discovery/experiments/run_sweep.py --sweep_config corner
-python3 aux_task_discovery/experiments/run_sweep.py --sweep_config hallway
+python3 ./aux_task_discovery/experiments/run_sweep.py --config dqn_lr
+python3 ./aux_task_discovery/experiments/run_sweep.py --config gentest_lr
+python3 ./aux_task_discovery/experiments/run_sweep.py --config fixed_random_lr

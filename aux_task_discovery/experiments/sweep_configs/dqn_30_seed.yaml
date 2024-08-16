@@ -1,10 +1,10 @@
-name: fourrooms_gentest_30_seed
+name: fourrooms_dqn_30_seed
 method: grid
 parameters: 
   env:
     value: 'fourrooms'
   agent:
-    value: 'gentest'
+    value: 'dqn'
   normalize_input:
     value: True
   use_gpu:
@@ -19,35 +19,17 @@ parameters:
     value: 1000000000
   agent_args:
     parameters: 
-      tester: 
-        value: 'batch_trace'
-      generator: 
-        value: 'grid_subgoal'
-      epsilon:
-        value: 0.1
       gamma:
         value: 1
       learning_rate:
         value: 0.0025
-      adam_beta_1:
-        value: 0.0
-      learning_start:
-        value: 500
       hidden_size:
-        value: 36
+        value: 50
       buffer_size:
         value: 500
       batch_size: 
         value: 16
       target_update_freq:
         value: 100
-      n_aux_tasks:
-        value: 5
-      age_threshold:
-        value: 0
-      replace_ratio:
-        value: 0.2
-      replace_cycle:
+      learning_start:
         value: 500
-      tester_tau:
-        value: 0.05

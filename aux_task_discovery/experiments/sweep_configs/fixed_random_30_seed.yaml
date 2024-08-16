@@ -1,4 +1,4 @@
-name: fourrooms_gentest_30_seed
+name: fourrooms_fixed_random_30_seed
 method: grid
 parameters: 
   env:
@@ -44,9 +44,9 @@ parameters:
       n_aux_tasks:
         value: 5
       age_threshold:
-        value: 0
+        value: 1000000000
       replace_ratio:
-        value: 0.2
+        value: 0
       replace_cycle:
         value: 500
       tester_tau:
