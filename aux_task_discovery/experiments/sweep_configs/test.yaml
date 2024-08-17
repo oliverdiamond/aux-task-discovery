@@ -1,4 +1,4 @@
-name: fourrooms_gentest_track_model_params
+name: fourrooms_gentest_no_feature_reset
 method: grid
 parameters: 
   env:
