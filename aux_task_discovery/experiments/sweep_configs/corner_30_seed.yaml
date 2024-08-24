@@ -1,0 +1,48 @@
+name: fourrooms_corner_lr_sweep
+method: grid
+parameters: 
+  env:
+    value: 'fourrooms'
+  agent:
+    value: 'gentest'
+  normalize_input:
+    value: True
+  use_gpu:
+    value: False
+  gpu_id:
+    value: Null
+  seed:
+    values: [11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40]
+  max_episodes:
+    value: 200
+  max_steps:
+    value: 1000000000
+  agent_args:
+    parameters: 
+      tester: 
+        value: 'batch_trace'
+      generator: 
+        value: 'fourrooms_corner'
+      epsilon:
+        value: 0.1
+      gamma:
+        value: 1
+      learning_rate:
+        value: 0.0025
+      learning_start:
+        value: 500
+      hidden_size:
+        value: 43
+      buffer_size:
+        value: 500
+      batch_size: 
+        value: 16
+      target_update_freq:
+        value: 100
+      n_aux_tasks:
+        value: 2
+      replace_ratio:
+        value: 0
+      tester_tau:
+        value: 0.05
+      
