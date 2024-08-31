@@ -1,4 +1,4 @@
-name: fourrooms_gentest_30_seed
+name: fourrooms_gentest_30_seed_with_trace_log
 method: grid
 parameters: 
   env:

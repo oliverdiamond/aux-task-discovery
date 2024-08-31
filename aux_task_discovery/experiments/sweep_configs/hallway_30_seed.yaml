@@ -1,4 +1,4 @@
-name: fourrooms_hallway_lr_sweep
+name: fourrooms_hallway_30_seed
 method: grid
 parameters: 
   env:

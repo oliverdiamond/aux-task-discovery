@@ -1,4 +1,4 @@
-name: fourrooms_corner_30_seed
+name: fourrooms_hallway_30_seed_trace
 method: grid
 parameters: 
   env:
@@ -20,9 +20,9 @@ parameters:
   agent_args:
     parameters: 
       tester: 
-        value: 'batch_trace'
+        value: 'trace'
       generator: 
-        value: 'fourrooms_corner'
+        value: 'fourrooms_hallway'
       epsilon:
         value: 0.1
       gamma:
@@ -46,3 +46,5 @@ parameters:
       tester_tau:
         value: 0.05
       
+      
+

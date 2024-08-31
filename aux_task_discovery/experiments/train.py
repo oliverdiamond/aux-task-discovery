@@ -42,7 +42,7 @@ def training_loop(args=None):
         )
     
     # Track model parameters and gradients
-    #wandb.watch(agent.model, log='all')
+    wandb.watch(agent.model, log='all')
 
     # Train loop
     obs, _ = env.reset()

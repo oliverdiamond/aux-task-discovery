@@ -1,4 +1,4 @@
-name: fourrooms_gentest_no_feature_reset
+name: fourrooms_gentest_log_lr
 method: grid
 parameters: 
   env:
@@ -46,7 +46,7 @@ parameters:
       age_threshold:
         value: 0
       replace_ratio:
-        value: 0.1
+        value: 0.2
       replace_cycle:
         value: 500
       tester_tau:

@@ -139,12 +139,22 @@ class GenTestAgent(DQNAgent):
         self.task_ages += 1
         if self.step_idx >= self.learning_start:
             self.task_utils = self.tester.eval_tasks(batch=self.replay_buffer.last_batch, observation=obs)
-        
+
         # Gen Test Update
         if self.step_idx >= self.learning_start and self.step_idx % self.replace_cycle == 0:
             task_info = self._update_tasks()
             log_info.update(task_info)
             self._update_target_network()
+        
+        # Log feature traces and weight mags
+        if self.step_idx >= self.learning_start:
+            feature_traces = np.mean(self.tester.trace, axis=0)
+        else: 
+            feature_traces = self.tester.trace
+        feature_weights = np.sum(np.absolute(ptu.to_numpy(self.model.main_head.weight)), axis=0)
+        for i in range(self.hidden_size):
+            log_info[f'feature_{i}_trace'] = feature_traces[i]
+            log_info[f'feature_{i}_sum_weights'] = feature_weights[i]
 
         # Log aux task data
         for i in range(self.n_aux_tasks):
@@ -152,7 +162,7 @@ class GenTestAgent(DQNAgent):
             log_info[f'aux_{i+1}_util'] = self.task_utils[i]
             if isinstance(self.generator, GridSubgoalGenerator):
                 log_info[f'aux_{i+1}_subgoal'] = np.argmax(self.tasks[i].subgoal)
-        
+
         if self.step_idx==1:
             # Log plot of initial subgoals
             if isinstance(self.generator, GridSubgoalGenerator):

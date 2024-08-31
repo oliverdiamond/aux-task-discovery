@@ -18,7 +18,7 @@ def main():
                         help='Use if the provided ID is for a sweep, otherwise the ID is treated as an individual run by default')
     args = parser.parse_args()
 
-    api = wandb.Api()
+    api = wandb.Api(timeout=40)
 
     if args.sweep:
         # Query W&B API

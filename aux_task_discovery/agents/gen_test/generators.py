@@ -85,6 +85,34 @@ class FourroomsHallwayGenerator(Generator):
         hallway2_task = SubgoalGVF(hallway2)
         self.tasks = [hallway1_task, hallway2_task]
         return self.tasks
+    
+class FourroomsHallwayCornerGenerator(Generator):
+    '''
+    Generates the two hallway subgoal tasks and the two corner tasks
+    for the fourrooms environment from Gen + Test Paper
+    '''
+    def __init__(self, **kwargs):
+        self.input_shape = FourRoomsEnv().observation_space.shape
+        self.tasks = None
+
+    def generate_tasks(self, n_tasks=4) -> Sequence[GVF]:
+        assert n_tasks == 4, 'HallwayCorner generator for fourrooms environment only generates four subgoals'
+        if self.tasks is not None:
+            raise Exception('HallwayCorner tasks should not be reset after initialization')
+        hallway1 = np.zeros(self.input_shape, dtype=np.float32)
+        hallway1[33] = 1
+        hallway2 = np.zeros(self.input_shape, dtype=np.float32)
+        hallway2[38] = 1
+        corner1 = np.zeros(self.input_shape, dtype=np.float32)
+        corner1[0] = 1
+        corner2 = np.zeros(self.input_shape, dtype=np.float32)
+        corner2[2] = 1
+        hallway1_task = SubgoalGVF(hallway1)
+        hallway2_task = SubgoalGVF(hallway2)
+        corner1_task = SubgoalGVF(corner1)
+        corner2_task = SubgoalGVF(corner2)
+        self.tasks = [hallway1_task, hallway2_task, corner1_task, corner2_task]
+        return self.tasks
 
 #TODO Implement FeatureAttainGenerator
 class FeatureAttainGenerator(Generator):
@@ -95,6 +123,7 @@ GENERATOR_REG = {
     'feature': FeatureAttainGenerator,
     'fourrooms_corner': FourroomsCornerGenerator,
     'fourrooms_hallway': FourroomsHallwayGenerator,
+    'fourrooms_hallway_corner': FourroomsHallwayCornerGenerator
 }
 
 def get_generator(generator: str):

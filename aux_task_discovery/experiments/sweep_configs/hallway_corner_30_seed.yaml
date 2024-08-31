@@ -1,4 +1,4 @@
-name: fourrooms_corner_30_seed
+name: fourrooms_hallway_corner_30_seed
 method: grid
 parameters: 
   env:
@@ -22,7 +22,7 @@ parameters:
       tester: 
         value: 'batch_trace'
       generator: 
-        value: 'fourrooms_corner'
+        value: 'fourrooms_hallway_corner'
       epsilon:
         value: 0.1
       gamma:
@@ -32,7 +32,7 @@ parameters:
       learning_start:
         value: 500
       hidden_size:
-        value: 43
+        value: 38
       buffer_size:
         value: 500
       batch_size: 
@@ -40,9 +40,11 @@ parameters:
       target_update_freq:
         value: 100
       n_aux_tasks:
-        value: 2
+        value: 4
       replace_ratio:
         value: 0
       tester_tau:
         value: 0.05
       
+      
+
